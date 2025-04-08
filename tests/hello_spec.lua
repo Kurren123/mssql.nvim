@@ -1,9 +1,3 @@
-local busted = require("plenary.busted")
+local mssql = require("mssql")
 
-busted.describe("Hello function", function()
-	local mssql = require("mssql")
-
-	it("greets with given name", function()
-		assert.equals("Hello Brian", mssql.Hello("Brian"))
-	end)
-end)
+assert(mssql.Hello("Brian") == "Hello Brian", "mssql.Hello() did not return expected output")
