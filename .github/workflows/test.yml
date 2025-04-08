@@ -1,3 +1,9 @@
+name: End To End Tests
+
+on:
+  push:
+  pull_request:
+
 jobs:
   test:
     name: Test on ${{ matrix.os }}
