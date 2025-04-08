@@ -1,0 +1,26 @@
+name: End To End Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Neovim
+        uses: MunifTanjim/setup-neovim@v1
+        with:
+          neovim-version: stable
+
+      - name: Run Neovim tests
+        run: |
+          nvim --headless -u NONE -c "lua dofile('runtests.lua')"
