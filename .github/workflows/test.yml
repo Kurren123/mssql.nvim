@@ -16,6 +16,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Install winget (Windows)
+        if: runner.os == 'Windows'
+        uses: Cyberboss/install-winget@v1
+
       - name: Install Neovim (Windows) and add to PATH
         if: runner.os == 'Windows'
         run: |
