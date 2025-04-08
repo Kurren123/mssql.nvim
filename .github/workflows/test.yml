@@ -26,11 +26,16 @@ jobs:
           winget install Neovim.Neovim --silent --accept-package-agreements --accept-source-agreements
           echo "$Env:ProgramFiles\Neovim\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
 
-      - name: Set up Neovim (Linux/macOS)
-        if: runner.os != 'Windows'
-        uses: MunifTanjim/setup-neovim-action@v1
-        with:
-          neovim-version: stable
+      - name: Install Neovim (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install neovim
+
+      - name: Install Neovim (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y neovim
 
       - name: Run Neovim tests
         run: |
