@@ -1,3 +1,15 @@
+local json = require("mssql.json")
+
+-- creates the data directory if it doesn't exist, then returns it
+local function get_data_directory(opts)
+	local data_dir = opts.data_dir or (vim.fn.stdpath("data") .. "/mssql.nvim")
+	data_dir = data_dir:gsub("[/\\]+$", "")
+	if vim.fn.isdirectory(data_dir) == 0 then
+		vim.fn.mkdir(data_dir, "p")
+	end
+	return data_dir
+end
+
 local function read_json_file(path)
 	local file = io.open(path, "r")
 	if not file then
@@ -5,8 +17,18 @@ local function read_json_file(path)
 	end
 	local content = file:read("*a")
 	file:close()
-	local json = require("mssql.json")
 	return json.decode(content)
+end
+
+local function write_json_file(path, table)
+	local file = io.open(path, "w")
+	local text = json.encode(table)
+	if file then
+		file:write(text)
+		file:close()
+	else
+		error("Could not open file: " .. path)
+	end
 end
 
 local function get_tools_download_url()
@@ -42,18 +64,19 @@ local function get_tools_download_url()
 end
 
 -- delete any existing download folder, download, unzip and write the most recent url to the config
-local function download_tools(url, data_folder)
+local function download_tools(url, data_folder, callback)
 	local target_folder = data_folder .. "/sqltools"
 
-	local job
+	local download_job
 	if jit.os == "Windows" then
 		local temp_file = data_folder .. "/temp.zip"
 		-- Turn off the progress bar to speed up the download
-		job = {
+		download_job = {
 			"powershell",
 			"-Command",
 			string.format(
 				[[
+          $ErrorActionPreference = 'Stop'
           $ProgressPreference = 'SilentlyContinue'
           Invoke-WebRequest %s -OutFile "%s"
           if (Test-Path -LiteralPath "%s") { Remove-Item -LiteralPath "%s" -Recurse }
@@ -72,11 +95,12 @@ local function download_tools(url, data_folder)
 		}
 	else
 		local temp_file = data_folder .. "/temp.gz"
-		job = {
+		download_job = {
 			"bash",
 			"-c",
 			string.format(
 				[[
+        set -e
         curl -L "%s" -o "%s"
         rm -rf "%s"
         mkdir "%s"
@@ -94,17 +118,27 @@ local function download_tools(url, data_folder)
 		}
 	end
 
-	return job
+	print("Downloading sql tools...")
+	vim.fn.jobstart(download_job, {
+		on_exit = function(_, code)
+			if code ~= 0 then
+				vim.notify("Sql tools download error: exit code " .. code, vim.log.levels.ERROR)
+			else
+				print("Downloaded successfully")
+				callback()
+				-- todo: attach to buffer if we've opened an sql file in the time we were downloading
+			end
+		end,
+		stderr_buffered = true,
+		on_stderr = function(_, data)
+			if data and data[1] ~= "" then
+				vim.notify("Sql tools download error: " .. table.concat(data, "\n"), vim.log.levels.ERROR)
+			end
+		end,
+	})
 end
--- test lines
-vim.opt.rtp:append("C:/dev/mssql.nvim/")
-print(download_tools(get_tools_download_url(), "C:/dev/mssql.nvim/folder with spaces"))
 
 local M = {}
-
-function M.Hello(name)
-	return "Hello " .. name
-end
 
 function M.setup(opts)
 	M.opts = opts or {}
@@ -117,15 +151,23 @@ function M.setup(opts)
 		end
 		file:close()
 	else
-		local data_dir = opts.data_dir or (vim.fn.stdpath("data") .. "/mssql.nvim")
-		local config = read_json_file(data_dir .. "/config.json")
+		local data_dir = get_data_directory(opts)
+		local config_path = data_dir .. "/config.json"
+		local config = read_json_file(config_path)
 		local download_url = get_tools_download_url()
 
 		-- download if it's a first time setup or the last downloaded is old
 		if not config.last_downloaded_from or config.last_downloaded_from ~= download_url then
-			download_tools(download_url, data_dir)
+			download_tools(download_url, data_dir, function()
+				config.last_downloaded_from = download_url
+				write_json_file(config_path, config)
+			end)
 		end
 	end
 end
+
+-- test lines
+vim.opt.rtp:append("C:/dev/mssql.nvim/")
+M.setup({})
 
 return M
