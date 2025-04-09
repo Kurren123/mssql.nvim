@@ -123,7 +123,7 @@ function M.setup(opts)
 
 		-- download if it's a first time setup or the last downloaded is old
 		if not config.last_downloaded_from or config.last_downloaded_from ~= download_url then
-			download_tools(download_url, data_dir .. "/sqltools")
+			download_tools(download_url, data_dir)
 		end
 	end
 end
