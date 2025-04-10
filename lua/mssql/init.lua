@@ -1,3 +1,5 @@
+local downloader = require("mssql.tools_downloader")
+
 local joinpath = vim.fs.joinpath
 -- creates the data directory if it doesn't exist, then returns it
 local function get_data_directory(opts)
@@ -30,113 +32,6 @@ local function write_json_file(path, table)
 	end
 end
 
-local function get_tools_download_url()
-	local urls = {
-		Windows = {
-			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-win-arm64-net8.0.zip",
-			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-win-x64-net8.0.zip",
-			x86 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-win-x86-net8.0.zip",
-		},
-		Linux = {
-			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-linux-arm64-net8.0.tar.gz",
-			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-linux-x64-net8.0.tar.gz",
-		},
-		OSX = {
-			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-osx-arm64-net8.0.tar.gz",
-			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-osx-x64-net8.0.tar.gz",
-		},
-	}
-
-	local os = jit.os
-	local arch = jit.arch
-
-	if not urls[os] then
-		error("Your OS " .. os .. " is not supported. It must be Windows, Linux or OSX.")
-	end
-
-	local url = urls[os][arch]
-	if not url then
-		error("Your system architecture " .. arch .. " is not supported. It can either be x64 or arm64.")
-	end
-
-	return url
-end
-
--- delete any existing download folder, download, unzip and write the most recent url to the config
-local function download_tools(url, data_folder, callback)
-	local target_folder = joinpath(data_folder, "sqltools")
-
-	local download_job
-	if jit.os == "Windows" then
-		local temp_file = joinpath(data_folder, "/temp.zip")
-		-- Turn off the progress bar to speed up the download
-		download_job = {
-			"powershell",
-			"-Command",
-			string.format(
-				[[
-          $ErrorActionPreference = 'Stop'
-          $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest %s -OutFile "%s"
-          if (Test-Path -LiteralPath "%s") { Remove-Item -LiteralPath "%s" -Recurse }
-          Expand-Archive "%s" "%s"
-          Remove-Item "%s"
-          $ProgressPreference = 'Continue'
-        ]],
-				url,
-				temp_file,
-				target_folder,
-				target_folder,
-				temp_file,
-				target_folder,
-				temp_file
-			),
-		}
-	else
-		local temp_file = joinpath(data_folder, "/temp.gz")
-		download_job = {
-			"bash",
-			"-c",
-			string.format(
-				[[
-          set -e
-          curl -L "%s" -o "%s"
-          rm -rf "%s"
-          mkdir "%s"
-          tar -xzf "%s" -C "%s"
-          rm "%s"
-        ]],
-				url,
-				temp_file,
-				target_folder,
-				target_folder,
-				temp_file,
-				target_folder,
-				temp_file
-			),
-		}
-	end
-
-	print("Downloading sql tools...")
-	vim.fn.jobstart(download_job, {
-		on_exit = function(_, code)
-			if code ~= 0 then
-				vim.notify("Sql tools download error: exit code " .. code, vim.log.levels.ERROR)
-			else
-				print("Downloaded successfully")
-				callback()
-				-- todo: attach to buffer if we've opened an sql file in the time we were downloading
-			end
-		end,
-		stderr_buffered = true,
-		on_stderr = function(_, data)
-			if data and data[1] ~= "" then
-				vim.notify("Sql tools download error: " .. table.concat(data, "\n"), vim.log.levels.ERROR)
-			end
-		end,
-	})
-end
-
 local M = {}
 
 function M.setup(opts)
@@ -154,11 +49,11 @@ function M.setup(opts)
 		local data_dir = get_data_directory(opts)
 		local config_path = joinpath(data_dir, "config.json")
 		local config = read_json_file(config_path)
-		local download_url = get_tools_download_url()
+		local download_url = downloader.get_tools_download_url()
 
 		-- download if it's a first time setup or the last downloaded is old
 		if not config.last_downloaded_from or config.last_downloaded_from ~= download_url then
-			download_tools(download_url, data_dir, function()
+			downloader.download_tools(download_url, data_dir, function()
 				config.last_downloaded_from = download_url
 				write_json_file(config_path, config)
 			end)
