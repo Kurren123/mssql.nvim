@@ -141,7 +141,8 @@ end
 local M = {}
 
 function M.setup(opts)
-	M.opts = opts or {}
+	opts = opts or {}
+	M.opts = opts
 
 	-- if the opts specify a tools file path, don't download.
 	if opts.tools_file then
@@ -165,9 +166,5 @@ function M.setup(opts)
 		end
 	end
 end
-
--- test lines
-vim.opt.rtp:append("C:/dev/mssql.nvim/")
-M.setup({})
 
 return M

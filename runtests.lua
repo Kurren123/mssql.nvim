@@ -1,7 +1,7 @@
 vim.opt.rtp:prepend(".")
 
 local test_files = {
-	"tests/hello_spec.lua",
+	"tests/download_spec.lua",
 }
 
 local has_failures = false
