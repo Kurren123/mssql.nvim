@@ -1,5 +1,3 @@
-local json = require("mssql.json")
-
 -- creates the data directory if it doesn't exist, then returns it
 local function get_data_directory(opts)
 	local data_dir = opts.data_dir or (vim.fn.stdpath("data") .. "/mssql.nvim")
@@ -17,12 +15,12 @@ local function read_json_file(path)
 	end
 	local content = file:read("*a")
 	file:close()
-	return json.decode(content)
+	vim.json.decode(content)
 end
 
 local function write_json_file(path, table)
 	local file = io.open(path, "w")
-	local text = json.encode(table)
+	local text = vim.json.encode(table)
 	if file then
 		file:write(text)
 		file:close()
@@ -100,13 +98,13 @@ local function download_tools(url, data_folder, callback)
 			"-c",
 			string.format(
 				[[
-        set -e
-        curl -L "%s" -o "%s"
-        rm -rf "%s"
-        mkdir "%s"
-        tar -xzf "%s" -C "%s"
-        rm "%s"
-      ]],
+          set -e
+          curl -L "%s" -o "%s"
+          rm -rf "%s"
+          mkdir "%s"
+          tar -xzf "%s" -C "%s"
+          rm "%s"
+        ]],
 				url,
 				temp_file,
 				target_folder,
