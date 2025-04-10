@@ -10,16 +10,16 @@ function iif(cond, true_value, false_value)
 	end
 end
 
-local tools_folder = vim.fn.stdpath("data") .. "/mssql.nvim/sqltools"
+local tools_folder = vim.fs.joinpath(vim.fn.stdpath("data"), "mssql.nvim/sqltools")
 local tools_file = iif(jit.os == "Windows", "MicrosoftSqlToolsServiceLayer.exe", "MicrosoftSqlToolsServiceLayer")
 
 vim.fn.delete(tools_folder, "rf")
-vim.fn.delete(vim.fn.stdpath("data") .. "/mssql.nvim/config.json")
+vim.fn.delete(vim.fs.joinpath(vim.fn.stdpath("data"), "mssql.nvim/config.json"))
 
 local ok, err = pcall(function()
 	mssql.setup()
 	vim.wait(120000, function()
-		local f = io.open(tools_folder .. "/" .. tools_file, "r")
+		local f = io.open(vim.fs.joinpath(tools_folder, tools_file), "r")
 		if f then
 			f:close()
 			download_finished = true

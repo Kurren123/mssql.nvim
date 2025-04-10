@@ -1,6 +1,7 @@
+local joinpath = vim.fs.joinpath
 -- creates the data directory if it doesn't exist, then returns it
 local function get_data_directory(opts)
-	local data_dir = opts.data_dir or (vim.fn.stdpath("data") .. "/mssql.nvim")
+	local data_dir = opts.data_dir or joinpath(vim.fn.stdpath("data"), "/mssql.nvim")
 	data_dir = data_dir:gsub("[/\\]+$", "")
 	if vim.fn.isdirectory(data_dir) == 0 then
 		vim.fn.mkdir(data_dir, "p")
@@ -15,7 +16,7 @@ local function read_json_file(path)
 	end
 	local content = file:read("*a")
 	file:close()
-	vim.json.decode(content)
+	return vim.json.decode(content)
 end
 
 local function write_json_file(path, table)
@@ -32,16 +33,16 @@ end
 local function get_tools_download_url()
 	local urls = {
 		Windows = {
-			arm = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-win-arm64-net8.0.zip",
+			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-win-arm64-net8.0.zip",
 			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-win-x64-net8.0.zip",
 			x86 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-win-x86-net8.0.zip",
 		},
 		Linux = {
-			arm = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-linux-arm64-net8.0.tar.gz",
+			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-linux-arm64-net8.0.tar.gz",
 			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-linux-x64-net8.0.tar.gz",
 		},
 		OSX = {
-			arm = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-osx-arm64-net8.0.tar.gz",
+			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-osx-arm64-net8.0.tar.gz",
 			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-osx-x64-net8.0.tar.gz",
 		},
 	}
@@ -55,7 +56,7 @@ local function get_tools_download_url()
 
 	local url = urls[os][arch]
 	if not url then
-		error("Your system architecture " .. arch .. " is not supported. It can either be x64 or arm.")
+		error("Your system architecture " .. arch .. " is not supported. It can either be x64 or arm64.")
 	end
 
 	return url
@@ -63,11 +64,11 @@ end
 
 -- delete any existing download folder, download, unzip and write the most recent url to the config
 local function download_tools(url, data_folder, callback)
-	local target_folder = data_folder .. "/sqltools"
+	local target_folder = joinpath(data_folder, "sqltools")
 
 	local download_job
 	if jit.os == "Windows" then
-		local temp_file = data_folder .. "/temp.zip"
+		local temp_file = joinpath(data_folder, "/temp.zip")
 		-- Turn off the progress bar to speed up the download
 		download_job = {
 			"powershell",
@@ -92,7 +93,7 @@ local function download_tools(url, data_folder, callback)
 			),
 		}
 	else
-		local temp_file = data_folder .. "/temp.gz"
+		local temp_file = joinpath(data_folder, "/temp.gz")
 		download_job = {
 			"bash",
 			"-c",
@@ -151,7 +152,7 @@ function M.setup(opts)
 		file:close()
 	else
 		local data_dir = get_data_directory(opts)
-		local config_path = data_dir .. "/config.json"
+		local config_path = joinpath(data_dir, "config.json")
 		local config = read_json_file(config_path)
 		local download_url = get_tools_download_url()
 
