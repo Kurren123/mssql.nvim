@@ -33,9 +33,10 @@ jobs:
       - name: Install Neovim (Linux)
         if: runner.os == 'Linux'
         run: |
-          curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
-          tar xzf nvim-linux64.tar.gz
-          echo "$PWD/nvim-linux64/bin" >> $GITHUB_PATH
+          curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+          sudo rm -rf /opt/nvim
+          sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
+          echo "/opt/nvim-linux-x86_64/bin" >> $GITHUB_PATH
 
       - name: Run Neovim tests
         run: |
