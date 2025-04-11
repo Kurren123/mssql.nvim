@@ -2,6 +2,7 @@ vim.opt.rtp:prepend(".")
 
 local test_files = {
 	"tests/download_spec.lua",
+	"tests/completion_spec.lua",
 }
 
 local has_failures = false
@@ -12,6 +13,7 @@ for _, file in ipairs(test_files) do
 	if not ok then
 		has_failures = true
 		io.stderr:write("Error in " .. file .. ":\n" .. tostring(err) .. "\n")
+		break
 	else
 		print("Passed: " .. file)
 	end

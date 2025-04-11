@@ -1,3 +1,2 @@
--- for testing manually
-vim.opt.rtp:prepend(".")
-require("mssql")
+vim.opt.rtp:prepend("C:/dev/mssql.nvim")
+require("mssql").setup()
