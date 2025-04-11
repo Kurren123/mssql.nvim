@@ -32,9 +32,26 @@ local function write_json_file(path, table)
 	end
 end
 
+local function enable_lsp(data_dir, callback)
+	local ls = joinpath(data_dir, "sqltools/MicrosoftSqlToolsServiceLayer")
+	if jit.os == "Windows" then
+		ls = ls .. ".exe"
+	end
+
+	vim.lsp.config["mssql_ls"] = {
+		cmd = { ls },
+		filetypes = { "sql" },
+	}
+	vim.lsp.enable("mssql_ls")
+
+	if callback ~= nil then
+		callback()
+	end
+end
+
 local M = {}
 
-function M.setup(opts)
+function M.setup(opts, callback)
 	opts = opts or {}
 	M.opts = opts
 
@@ -47,16 +64,19 @@ function M.setup(opts)
 		file:close()
 	else
 		local data_dir = get_data_directory(opts)
-		local config_path = joinpath(data_dir, "config.json")
-		local config = read_json_file(config_path)
+		local config_file = joinpath(data_dir, "config.json")
+		local config = read_json_file(config_file)
 		local download_url = downloader.get_tools_download_url()
 
 		-- download if it's a first time setup or the last downloaded is old
 		if not config.last_downloaded_from or config.last_downloaded_from ~= download_url then
 			downloader.download_tools(download_url, data_dir, function()
 				config.last_downloaded_from = download_url
-				write_json_file(config_path, config)
+				write_json_file(config_file, config)
+				enable_lsp(data_dir, callback)
 			end)
+		else
+			enable_lsp(data_dir, callback)
 		end
 	end
 end
