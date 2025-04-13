@@ -12,6 +12,9 @@ end
 
 -- Prepend plugin root to runtimepath
 vim.opt.rtp:prepend(get_plugin_root())
+-- Disable swap files to avoid test errors
+vim.opt.swapfile = false
+
 require("mssql").setup()
 
 dofile("tests/completion_spec.lua")
