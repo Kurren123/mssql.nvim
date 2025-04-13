@@ -10,8 +10,8 @@ local get_plugin_root = function()
 	})[1]
 end
 
-print(get_plugin_root())
-
 -- Prepend plugin root to runtimepath
 vim.opt.rtp:prepend(get_plugin_root())
 require("mssql").setup()
+
+dofile("tests/completion_spec.lua")
