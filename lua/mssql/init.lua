@@ -42,7 +42,6 @@ local function enable_lsp(data_dir, callback)
 		cmd = { ls },
 		filetypes = { "sql" },
 	}
-	print("enabling lsp")
 	vim.lsp.enable("mssql_ls")
 
 	if callback ~= nil then
