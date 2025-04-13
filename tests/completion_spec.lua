@@ -22,13 +22,13 @@ end)
 
 vim.defer_fn(function()
 	assert(#vim.lsp.get_clients({ bufnr = 0 }) == 1, "No lsp clients attached")
-	print("Language server attached")
+
 	-- move to the end of the "SE" in SELECT
 	vim.api.nvim_win_set_cursor(0, { 1, 2 })
 	get_completion_items(function(items)
 		assert(#items > 0, "Neovim didn't provide any completion items")
 		assert(utils.contains(items, "SELECT"))
 		print("SELECT was present!")
-		-- vim.cmd("qa!")
+		vim.cmd("stopinsert")
 	end)
 end, 3000)
