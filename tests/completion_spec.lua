@@ -16,19 +16,23 @@ local function get_completion_items(callback)
 	end, 500)
 end
 
-vim.schedule(function()
-	vim.cmd("e tests/completion.sql")
-end)
+return {
+	run_test = function(callback)
+		vim.schedule(function()
+			vim.cmd("e tests/completion.sql")
+		end)
 
-vim.defer_fn(function()
-	assert(#vim.lsp.get_clients({ bufnr = 0 }) == 1, "No lsp clients attached")
+		vim.defer_fn(function()
+			assert(#vim.lsp.get_clients({ bufnr = 0 }) == 1, "No lsp clients attached")
 
-	-- move to the end of the "SE" in SELECT
-	vim.api.nvim_win_set_cursor(0, { 1, 2 })
-	get_completion_items(function(items)
-		assert(#items > 0, "Neovim didn't provide any completion items")
-		assert(utils.contains(items, "SELECT"))
-		print("SELECT was present!")
-		vim.cmd("stopinsert")
-	end)
-end, 3000)
+			-- move to the end of the "SE" in SELECT
+			vim.api.nvim_win_set_cursor(0, { 1, 2 })
+			get_completion_items(function(items)
+				assert(#items > 0, "Neovim didn't provide any completion items")
+				assert(utils.contains(items, "SELECT"))
+				vim.cmd("stopinsert")
+				callback()
+			end)
+		end, 3000)
+	end,
+}

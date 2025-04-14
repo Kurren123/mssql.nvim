@@ -17,4 +17,6 @@ vim.opt.swapfile = false
 
 require("mssql").setup()
 
-dofile("tests/completion_spec.lua")
+require("tests.completion_spec").run_test(function()
+	vim.cmd("qa!")
+end)
