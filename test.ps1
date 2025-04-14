@@ -1,1 +1,1 @@
-nvim --headless -u NONE -c "lua dofile('runtests.lua')"
+nvim -u .\runtests.lua --headless
