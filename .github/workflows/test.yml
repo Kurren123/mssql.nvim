@@ -40,4 +40,4 @@ jobs:
 
       - name: Run Neovim tests
         run: |
-          nvim -u .\runtests.lua --headless
+          nvim -u runtests.lua --headless
