@@ -36,9 +36,10 @@ end)
 
 ## Options
 
-Option Description Default
-data_dir Directory to store tools (if downloading) vim.fn.stdpath("data")
-tools_file Path to existing SQL Server tools binary. If not set, downloads it. auto-downloaded if needed
+| Name         | Type     | Description                                                             | Default                  |
+| ------------ | -------- | ----------------------------------------------------------------------- | ------------------------ |
+| `data_dir`   | `string` | Directory to store download tools and internal config options           | `vim.fn.stdpath("data")` |
+| `tools_file` | `string` | Path to an existing SQL Server tools binary; otherwise, auto-downloaded | Downloaded to `data_dir` |
 
 ## Notes
 
