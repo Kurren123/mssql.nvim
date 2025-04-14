@@ -15,28 +15,25 @@ vim.opt.rtp:prepend(get_plugin_root())
 -- Disable swap files to avoid test errors
 vim.opt.swapfile = false
 
-require("mssql").setup()
+local function run_test(name, test_fn, next_fn)
+	print("Running " .. name .. "\n")
+	local success, err = pcall(function()
+		test_fn(function()
+			print("\ntest passed\n")
+			if next_fn then
+				next_fn()
+			end
+		end)
+	end)
 
-dofile("tests/completion_spec.lua")
-
-local test_files = {
-	-- "tests/download_spec.lua",
-	"tests/completion_spec.lua",
-}
-
-local has_failures = false
-
-for _, file in ipairs(test_files) do
-	print("Running: " .. file)
-	local ok, err = pcall(dofile, file)
-	if not ok then
-		has_failures = true
-		io.stderr:write("Error in " .. file .. ":\n" .. tostring(err) .. "\n")
-		break
-	else
-		print("Passed: " .. file)
+	if not success then
+		print("\n" .. name .. " FAILED: " .. err .. "\n")
+		os.exit(1)
 	end
 end
 
--- Exit with proper code
-os.exit(has_failures and 1 or 0)
+run_test("download_spec", require("tests.download_spec").run_test, function()
+	run_test("completion_spec", require("tests.completion_spec").run_test, function()
+		os.exit(0)
+	end)
+end)
