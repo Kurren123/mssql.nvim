@@ -97,7 +97,6 @@ M.download_tools = function(url, data_folder, callback)
 			else
 				vim.notify("Downloaded successfully", vim.log.levels.INFO)
 				callback()
-				-- todo: attach to buffer if we've opened an sql file in the time we were downloading
 			end
 		end,
 		stderr_buffered = true,

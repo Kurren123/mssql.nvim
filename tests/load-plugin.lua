@@ -15,7 +15,9 @@ vim.opt.rtp:prepend(get_plugin_root())
 -- Disable swap files to avoid test errors
 vim.opt.swapfile = false
 
-require("mssql").setup()
+require("mssql").setup({}, function()
+	require("tests.download_spec")
+end)
 
 require("tests.completion_spec").run_test(function()
 	vim.cmd("qa!")
