@@ -35,7 +35,7 @@ M.get_tools_download_url = function()
 end
 
 -- Delete any existing download folder, download, unzip and write the most recent url to the config
-M.download_tools = function(url, data_folder, callback)
+M.download_tools_async = function(url, data_folder)
 	local target_folder = joinpath(data_folder, "sqltools")
 
 	local download_job
@@ -90,13 +90,15 @@ M.download_tools = function(url, data_folder, callback)
 	end
 
 	vim.notify("Downloading sql tools...", vim.log.levels.INFO)
+
+	local co = coroutine.running()
 	vim.fn.jobstart(download_job, {
 		on_exit = function(_, code)
 			if code ~= 0 then
 				vim.notify("Sql tools download error: exit code " .. code, vim.log.levels.ERROR)
 			else
 				vim.notify("Downloaded successfully", vim.log.levels.INFO)
-				callback()
+				coroutine.resume(co)
 			end
 		end,
 		stderr_buffered = true,
@@ -106,6 +108,7 @@ M.download_tools = function(url, data_folder, callback)
 			end
 		end,
 	})
+	coroutine.yield()
 end
 
 return M

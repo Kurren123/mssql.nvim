@@ -32,7 +32,7 @@ local function write_json_file(path, table)
 	end
 end
 
-local function enable_lsp(data_dir, callback)
+local function enable_lsp(data_dir)
 	local ls = joinpath(data_dir, "sqltools/MicrosoftSqlToolsServiceLayer")
 	if jit.os == "Windows" then
 		ls = ls .. ".exe"
@@ -43,15 +43,10 @@ local function enable_lsp(data_dir, callback)
 		filetypes = { "sql" },
 	}
 	vim.lsp.enable("mssql_ls")
-
-	if callback ~= nil then
-		callback()
-	end
 end
 
 local M = {}
-
-function M.setup(opts, callback)
+function M.setup_async(opts)
 	opts = opts or {}
 	M.opts = opts
 
@@ -70,15 +65,20 @@ function M.setup(opts, callback)
 
 		-- download if it's a first time setup or the last downloaded is old
 		if not config.last_downloaded_from or config.last_downloaded_from ~= download_url then
-			downloader.download_tools(download_url, data_dir, function()
-				config.last_downloaded_from = download_url
-				write_json_file(config_file, config)
-				enable_lsp(data_dir, callback)
-			end)
-		else
-			enable_lsp(data_dir, callback)
+			downloader.download_tools_async(download_url, data_dir)
+			config.last_downloaded_from = download_url
+			write_json_file(config_file, config)
 		end
+
+		enable_lsp(data_dir)
 	end
+end
+
+function M.setup(opts, callback)
+	coroutine.resume(coroutine.create(function()
+		M.setup_async(opts)
+		callback()
+	end))
 end
 
 return M
