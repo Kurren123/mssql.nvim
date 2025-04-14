@@ -20,21 +20,27 @@ local function tools_file_exists()
 	return false
 end
 
+local function setup_async()
+	local co = coroutine.running()
+	mssql.setup({}, function()
+		coroutine.resume(co)
+	end)
+	coroutine.yield()
+end
+
 return {
-	run_test = function(callback)
+	test_name = "Setup should download and extract the sql tools",
+	run_test_async = function()
 		vim.fn.delete(tools_folder, "rf")
 		vim.fn.delete(vim.fs.joinpath(vim.fn.stdpath("data"), "mssql.nvim/config.json"))
 
 		local download_finished = false
-
-		mssql.setup(nil, function()
-			download_finished = true
-			assert(tools_file_exists(), "The sql server tools file does not exist among the downloads")
-			callback()
-		end)
-
 		vim.defer_fn(function()
 			assert(download_finished, "Download did not complete")
 		end, 120000)
+
+		setup_async()
+		download_finished = true
+		assert(tools_file_exists(), "The sql server tools file does not exist among the downloads")
 	end,
 }

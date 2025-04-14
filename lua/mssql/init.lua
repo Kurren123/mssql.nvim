@@ -45,10 +45,8 @@ local function enable_lsp(data_dir)
 	vim.lsp.enable("mssql_ls")
 end
 
-local M = {}
-function M.setup_async(opts)
+local function setup_async(opts)
 	opts = opts or {}
-	M.opts = opts
 
 	-- if the opts specify a tools file path, don't download.
 	if opts.tools_file then
@@ -74,11 +72,13 @@ function M.setup_async(opts)
 	end
 end
 
-function M.setup(opts, callback)
-	coroutine.resume(coroutine.create(function()
-		M.setup_async(opts)
-		callback()
-	end))
-end
-
-return M
+return {
+	setup = function(opts, callback)
+		coroutine.resume(coroutine.create(function()
+			setup_async(opts)
+			if callback ~= nil then
+				callback()
+			end
+		end))
+	end,
+}

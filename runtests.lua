@@ -15,25 +15,23 @@ vim.opt.rtp:prepend(get_plugin_root())
 -- Disable swap files to avoid test errors
 vim.opt.swapfile = false
 
-local function run_test(name, test_fn, next_fn)
-	print("Running " .. name .. "\n")
-	local success, err = pcall(function()
-		test_fn(function()
-			print("\ntest passed\n")
-			if next_fn then
-				next_fn()
-			end
-		end)
-	end)
+local function run_test(test)
+	print("=== Running: " .. test.test_name .. " ===\n")
+	local success, err = pcall(test.run_test_async)
 
 	if not success then
-		print("\n" .. name .. " FAILED: " .. err .. "\n")
+		print("\n" .. test.test_name .. " FAILED: " .. err .. "\n")
 		os.exit(1)
+	else
+		print("\nTest passed\n\n")
 	end
 end
 
-run_test("download_spec", require("tests.download_spec").run_test, function()
-	run_test("completion_spec", require("tests.completion_spec").run_test, function()
-		os.exit(0)
-	end)
-end)
+local tests = { require("tests.download_spec"), require("tests.completion_spec") }
+
+coroutine.resume(coroutine.create(function()
+	for _, test in ipairs(tests) do
+		run_test(test)
+	end
+	os.exit(0)
+end))
