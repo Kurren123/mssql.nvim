@@ -40,6 +40,7 @@ local function enable_lsp(data_dir)
 
 	vim.lsp.config["mssql_ls"] = {
 		cmd = { ls },
+		-- cmd = { "c:/dev/lsp-sniffer/intercept/bin/Debug/net9.0/exe-sniffer.exe" },
 		filetypes = { "sql" },
 	}
 	vim.lsp.enable("mssql_ls")
@@ -57,8 +58,23 @@ local function set_auto_commands()
 			local buf = vim.api.nvim_get_current_buf()
 			local name = vim.api.nvim_buf_get_name(buf)
 			if name == "" then
-				local new_name = "untitled-" .. buf .. ".sql"
-				vim.cmd("file " .. new_name)
+				vim.cmd("file untitled-" .. buf .. ".sql")
+				vim.b[buf].is_temp_name = true
+			end
+		end,
+	})
+
+	-- Reset the buffer to the file name upon saving
+	vim.api.nvim_create_autocmd("BufWritePost", {
+		group = "AutoNameSQL",
+		pattern = "*.sql",
+		callback = function(args)
+			local buf = args.buf
+			if vim.b[buf].is_temp_name then
+				local written_name = vim.fn.fnamemodify(vim.fn.expand("<afile>"), ":t")
+
+				vim.cmd("file " .. written_name)
+				vim.b[buf].is_temp_name = nil
 			end
 		end,
 	})
