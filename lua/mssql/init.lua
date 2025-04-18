@@ -45,6 +45,25 @@ local function enable_lsp(data_dir)
 	vim.lsp.enable("mssql_ls")
 end
 
+local function set_auto_commands()
+	-- The langauge server requires all files to have a file name.
+	-- Vscode names new files "untitled-1" etc so we'll do the same
+	vim.api.nvim_create_augroup("AutoNameSQL", { clear = true })
+
+	vim.api.nvim_create_autocmd("FileType", {
+		group = "AutoNameSQL",
+		pattern = "sql",
+		callback = function()
+			local buf = vim.api.nvim_get_current_buf()
+			local name = vim.api.nvim_buf_get_name(buf)
+			if name == "" then
+				local new_name = "untitled-" .. buf .. ".sql"
+				vim.cmd("file " .. new_name)
+			end
+		end,
+	})
+end
+
 local function setup_async(opts)
 	opts = opts or {}
 
@@ -69,6 +88,7 @@ local function setup_async(opts)
 		end
 
 		enable_lsp(data_dir)
+		set_auto_commands()
 	end
 end
 
