@@ -10,24 +10,32 @@ local get_plugin_root = function()
 	})[1]
 end
 
+local function print_without_prompt(message)
+	io.stdout:write(message .. "\n")
+end
+
 -- Prepend plugin root to runtimepath
 vim.opt.rtp:prepend(get_plugin_root())
 -- Disable swap files to avoid test errors
 vim.opt.swapfile = false
 
 local function run_test(test)
-	print("=== Running: " .. test.test_name .. " ===\n")
+	print_without_prompt("=== Running: " .. test.test_name .. " ===")
 	local success, err = pcall(test.run_test_async)
 
 	if not success then
-		print("\n" .. test.test_name .. " FAILED: " .. err .. "\n")
+		print_without_prompt("\n" .. test.test_name .. " FAILED: " .. err)
 		os.exit(1)
 	else
-		print("\nTest passed\n\n")
+		print_without_prompt("\nTest passed\n")
 	end
 end
 
-local tests = { require("tests.download_spec"), require("tests.completion_spec") }
+local tests = {
+	require("tests.download_spec"),
+	require("tests.completion_spec"),
+	require("tests.new_buffer_completion_spec"),
+}
 
 coroutine.resume(coroutine.create(function()
 	for _, test in ipairs(tests) do
