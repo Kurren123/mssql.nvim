@@ -1,14 +1,11 @@
 local downloader = require("mssql.tools_downloader")
-
 local joinpath = vim.fs.joinpath
--- creates the data directory if it doesn't exist, then returns it
-local function get_data_directory(opts)
-	local data_dir = opts.data_dir or joinpath(vim.fn.stdpath("data"), "/mssql.nvim")
-	data_dir = data_dir:gsub("[/\\]+$", "")
-	if vim.fn.isdirectory(data_dir) == 0 then
-		vim.fn.mkdir(data_dir, "p")
+
+-- creates the directory if it doesn't exist
+local function make_directory(path)
+	if vim.fn.isdirectory(path) == 0 then
+		vim.fn.mkdir(path, "p")
 	end
-	return data_dir
 end
 
 local function read_json_file(path)
@@ -32,15 +29,14 @@ local function write_json_file(path, table)
 	end
 end
 
-local function enable_lsp(data_dir)
-	local ls = joinpath(data_dir, "sqltools/MicrosoftSqlToolsServiceLayer")
+local function enable_lsp(opts)
+	local default_path = joinpath(opts.data_dir, "sqltools/MicrosoftSqlToolsServiceLayer")
 	if jit.os == "Windows" then
-		ls = ls .. ".exe"
+		default_path = default_path .. ".exe"
 	end
 
 	vim.lsp.config["mssql_ls"] = {
-		cmd = { ls },
-		-- cmd = { "c:/dev/lsp-sniffer/intercept/bin/Debug/net9.0/exe-sniffer.exe" },
+		cmd = { opts.tools_file or default_path },
 		filetypes = { "sql" },
 	}
 	vim.lsp.enable("mssql_ls")
@@ -81,7 +77,12 @@ local function set_auto_commands()
 end
 
 local function setup_async(opts)
-	opts = opts or {}
+	local default_opts = {
+		data_dir = joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", ""),
+		tools_file = nil,
+		notify_lsp_errors = false,
+	}
+	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 
 	-- if the opts specify a tools file path, don't download.
 	if opts.tools_file then
@@ -91,19 +92,19 @@ local function setup_async(opts)
 		end
 		file:close()
 	else
-		local data_dir = get_data_directory(opts)
-		local config_file = joinpath(data_dir, "config.json")
+		make_directory(opts.data_dir)
+		local config_file = joinpath(opts.data_dir, "config.json")
 		local config = read_json_file(config_file)
 		local download_url = downloader.get_tools_download_url()
 
 		-- download if it's a first time setup or the last downloaded is old
 		if not config.last_downloaded_from or config.last_downloaded_from ~= download_url then
-			downloader.download_tools_async(download_url, data_dir)
+			downloader.download_tools_async(download_url, opts.data_dir)
 			config.last_downloaded_from = download_url
 			write_json_file(config_file, config)
 		end
 
-		enable_lsp(data_dir)
+		enable_lsp(opts)
 		set_auto_commands()
 	end
 end
