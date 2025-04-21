@@ -14,5 +14,6 @@ end
 vim.opt.rtp:prepend(get_plugin_root())
 -- Disable swap files to avoid test errors
 vim.opt.swapfile = false
+vim.lsp.set_log_level("debug")
 
 require("mssql").setup()

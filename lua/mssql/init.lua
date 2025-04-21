@@ -43,22 +43,7 @@ local function enable_lsp(opts)
 end
 
 local function set_auto_commands()
-	-- The langauge server requires all files to have a file name.
-	-- Vscode names new files "untitled-1" etc so we'll do the same
 	vim.api.nvim_create_augroup("AutoNameSQL", { clear = true })
-
-	vim.api.nvim_create_autocmd("FileType", {
-		group = "AutoNameSQL",
-		pattern = "sql",
-		callback = function()
-			local buf = vim.api.nvim_get_current_buf()
-			local name = vim.api.nvim_buf_get_name(buf)
-			if name == "" then
-				vim.cmd("file untitled-" .. buf .. ".sql")
-				vim.b[buf].is_temp_name = true
-			end
-		end,
-	})
 
 	-- Reset the buffer to the file name upon saving
 	vim.api.nvim_create_autocmd("BufWritePost", {
@@ -117,5 +102,14 @@ return {
 				callback()
 			end
 		end))
+	end,
+	new_query = function()
+		-- The langauge server requires all files to have a file name.
+		-- Vscode names new files "untitled-1" etc so we'll do the same
+		vim.cmd("enew")
+		local buf = vim.api.nvim_get_current_buf()
+		vim.cmd("file untitled-" .. buf .. ".sql")
+		vim.cmd("setfiletype sql")
+		vim.b[buf].is_temp_name = true
 	end,
 }
