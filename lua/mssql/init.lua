@@ -111,4 +111,16 @@ return {
 		vim.cmd("setfiletype sql")
 		vim.b[buf].is_temp_name = true
 	end,
+	connect = function()
+		-- TODO: add a safe_assert_async to the utils, which checks if the input is not nil.
+		-- If it's nil, raise an error in vim.notify("...", vim.log.levels.ERROR). Use
+		-- coroutines somehow to only continue if there is no error
+
+		--TODO: check this for nil, then call the connect method. Check the connectParams in the
+		--.net code. Can hard code the connection details for now.
+
+		--TODO: pass in the connection pooling argument into the langauge server, and check if it
+		-- actually makes a difference.
+		local client = vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1]
+	end,
 }

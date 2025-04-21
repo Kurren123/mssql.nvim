@@ -1,3 +1,4 @@
+-- TODO: replace this with vim.iter
 local function map(tbl, fn)
 	local result = {}
 	for i, v in ipairs(tbl) do
