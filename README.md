@@ -9,14 +9,14 @@ An SQL Server plugin for neovim. **Not ready yet!** If you are looking for somet
 - [x] Download and extract the sql tools
 - [x] Basic LSP configuration
 - [x] Basic (disconected) auto complete for saved sql files
-- [ ] Basic (disconnected) auto complete for new (unsaved) buffers
+- [x] Auto complete for new queries (unsaved buffer)
 - [ ] Connect to a database
 
 ## Requirements
 
 - Neovim v0.11.0 or later
 
-## Usage
+## Setup
 
 ```lua
 -- Basic setup
@@ -36,14 +36,22 @@ require("mssql.nvim").setup({
 end)
 ```
 
-## Options
+### Options
 
-| Name         | Type     | Description                                                             | Default                  |
-| ------------ | -------- | ----------------------------------------------------------------------- | ------------------------ |
-| `data_dir`   | `string` | Directory to store download tools and internal config options           | `vim.fn.stdpath("data")` |
-| `tools_file` | `string` | Path to an existing SQL Server tools binary; otherwise, auto-downloaded | Downloaded to `data_dir` |
+| Name         | Type     | Description                                                   | Default                                      |
+| ------------ | -------- | ------------------------------------------------------------- | -------------------------------------------- |
+| `data_dir`   | `string` | Directory to store download tools and internal config options | `vim.fn.stdpath("data")`                     |
+| `tools_file` | `string` | Path to an existing SQL Server tools binary                   | `nil` (Binary auto downloaded to `data_dir`) |
 
-## Notes
+### Notes
 
 - `setup()` runs asynchronously as it may take some time to first download and extract the sql tools. Pass a callback as the second argument if you need to run code after initialization.
-- If `tools_file` is not provided and the sql tools are not already downloaded, it will be downloaded and extracted into the `data_dir` upon `setup`.
+
+## Provided functions
+
+```lua
+local mssql = require("mssql")
+
+-- Open a new buffer for sql queries
+mssql.new_query()
+```

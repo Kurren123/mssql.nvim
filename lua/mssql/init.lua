@@ -65,7 +65,6 @@ local function setup_async(opts)
 	local default_opts = {
 		data_dir = joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", ""),
 		tools_file = nil,
-		notify_lsp_errors = false,
 	}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 
