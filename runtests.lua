@@ -33,8 +33,8 @@ end
 
 local tests = {
 	require("tests.download_spec"),
-	require("tests.completion_spec"),
-	require("tests.new_buffer_completion_spec"),
+	require("tests.saved_file_completion_spec"),
+	require("tests.new_query_completion_spec"),
 }
 
 coroutine.resume(coroutine.create(function()
