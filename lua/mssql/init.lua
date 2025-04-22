@@ -1,40 +1,7 @@
 local downloader = require("mssql.tools_downloader")
+local utils = require("mssql.utils")
+
 local joinpath = vim.fs.joinpath
-
--- resumes the coroutiune, vim notifies any errors
-local function try_resume(co, ...)
-	local success, msg = coroutine.resume(co, ...)
-
-	if not success then
-		vim.notify(msg, vim.log.levels.ERROR)
-	end
-end
-
----makes a request to the lsp client
----@param client vim.lsp.Client
----@param method string
-local function lsp_request_async(client, method, params)
-	local this = coroutine.running()
-	client:request(method, params, function(err, result, _, _)
-		try_resume(this, result, err)
-	end)
-	return coroutine.yield()
-end
-
-local function ui_select_async(items, opts)
-	local this = coroutine.running()
-	vim.ui.select(items, opts, function(selected)
-		if not selected then
-			vim.notify("No selection made", vim.log.levels.INFO)
-			return
-		end
-		vim.schedule(function()
-			try_resume(this, selected)
-		end)
-	end)
-	local result = coroutine.yield()
-	return result
-end
 
 -- creates the directory if it doesn't exist
 local function make_directory(path)
@@ -189,7 +156,7 @@ local connect_async = function(opts)
 		"The connections json file must contain a valid json object"
 	)
 
-	local con = ui_select_async(vim.tbl_keys(json), { prompt = "Choose connection" })
+	local con = utils.ui_select_async(vim.tbl_keys(json), { prompt = "Choose connection" })
 
 	local connectParams = {
 		ownerUri = vim.fn.expand("%:p"),
@@ -198,7 +165,7 @@ local connect_async = function(opts)
 		},
 	}
 
-	local _, err = lsp_request_async(client, "connection/connect", connectParams)
+	local _, err = utils.lsp_request_async(client, "connection/connect", connectParams)
 	if err then
 		error("Could not connect: " .. err.message)
 	end
@@ -206,7 +173,7 @@ end
 
 return {
 	setup = function(opts, callback)
-		try_resume(coroutine.create(function()
+		utils.try_resume(coroutine.create(function()
 			setup_async(opts)
 			if callback ~= nil then
 				callback()
@@ -223,7 +190,7 @@ return {
 		vim.b[buf].is_temp_name = true
 	end,
 	connect = function()
-		try_resume(coroutine.create(function()
+		utils.try_resume(coroutine.create(function()
 			connect_async(plugin_opts)
 		end))
 		-- // Authentication Types
