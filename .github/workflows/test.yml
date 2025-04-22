@@ -19,24 +19,24 @@ jobs:
         if: runner.os == 'Windows'
         uses: Cyberboss/install-winget@v1
 
-      - name: Install Neovim (Windows) and add to PATH
+      - name: Run Windows setup
         if: runner.os == 'Windows'
-        run: |
-          winget install Neovim.Neovim --silent --accept-package-agreements --accept-source-agreements
-          echo "$Env:ProgramFiles\Neovim\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        run: ./tests/setup-scripts/windows.ps1
+        shell: pwsh
 
-      - name: Install Neovim (macOS)
+      - name: Make script executable
         if: runner.os == 'macOS'
-        run: |
-          brew install neovim
+        run: chmod +x ./tests/setup-scripts/linux.sh
+      - name: Run macOS setup
+        if: runner.os == 'macOS'
+        run: ./tests/setup-scripts/mac.sh
 
-      - name: Install Neovim (Linux)
+      - name: Make script executable
         if: runner.os == 'Linux'
-        run: |
-          curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
-          sudo rm -rf /opt/nvim
-          sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
-          echo "/opt/nvim-linux-x86_64/bin" >> $GITHUB_PATH
+        run: chmod +x ./tests/setup-scripts/linux.sh
+      - name: Run Linux setup
+        if: runner.os == 'Linux'
+        run: ./tests/setup-scripts/linux.sh
 
       - name: Run Neovim tests
         run: |
