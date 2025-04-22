@@ -2,8 +2,8 @@ local downloader = require("mssql.tools_downloader")
 local joinpath = vim.fs.joinpath
 
 -- resumes the coroutiune, vim notifies any errors
-local function try_resume(co, a)
-	local success, msg = coroutine.resume(co, a)
+local function try_resume(co, ...)
+	local success, msg = coroutine.resume(co, ...)
 
 	if not success then
 		vim.notify(msg, vim.log.levels.ERROR)
@@ -16,7 +16,7 @@ end
 local function lsp_request_async(client, method, params)
 	local this = coroutine.running()
 	client:request(method, params, function(err, result, _, _)
-		coroutine.resume(this, result, err)
+		try_resume(this, result, err)
 	end)
 	return coroutine.yield()
 end
@@ -29,7 +29,7 @@ local function ui_select_async(items, opts)
 			return
 		end
 		vim.schedule(function()
-			coroutine.resume(this, selected)
+			try_resume(this, selected)
 		end)
 	end)
 	local result = coroutine.yield()
@@ -199,12 +199,14 @@ local connect_async = function(opts)
 	}
 
 	local _, err = lsp_request_async(client, "connection/connect", connectParams)
-	assert(not err, "Could not connect: " .. err.message, vim.log.levels.ERROR)
+	if err then
+		error("Could not connect: " .. err.message)
+	end
 end
 
 return {
 	setup = function(opts, callback)
-		coroutine.resume(coroutine.create(function()
+		try_resume(coroutine.create(function()
 			setup_async(opts)
 			if callback ~= nil then
 				callback()
@@ -221,7 +223,7 @@ return {
 		vim.b[buf].is_temp_name = true
 	end,
 	connect = function()
-		coroutine.resume(coroutine.create(function()
+		try_resume(coroutine.create(function()
 			connect_async(plugin_opts)
 		end))
 		-- // Authentication Types
