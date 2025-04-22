@@ -24,8 +24,9 @@ require("mssql.nvim").setup()
 
 -- With options
 require("mssql.nvim").setup({
-  data_dir = "/custom/path",                    -- optional, defaults to vim.fn.stdpath("data")
-  tools_file = "/path/to/sqltools/executable",  -- optional, if not provided, auto-downloads to data_dir
+  data_dir = "/custom/path",
+  tools_file = "/path/to/sqltools/executable",
+  connections_file = "/path/to/connections.json"
 })
 
 -- With callback
@@ -38,10 +39,11 @@ end)
 
 ### Options
 
-| Name         | Type     | Description                                                   | Default                                      |
-| ------------ | -------- | ------------------------------------------------------------- | -------------------------------------------- |
-| `data_dir`   | `string` | Directory to store download tools and internal config options | `vim.fn.stdpath("data")`                     |
-| `tools_file` | `string` | Path to an existing SQL Server tools binary                   | `nil` (Binary auto downloaded to `data_dir`) |
+| Name               | Type     | Required?  | Description                                                   | Default                                      |
+| ------------------ | -------- | ---------- | ------------------------------------------------------------- | -------------------------------------------- |
+| `data_dir`         | `string` | `Optional` | Directory to store download tools and internal config options | `vim.fn.stdpath("data")`                     |
+| `tools_file`       | `string` | `Optional` | Path to an existing SQL Server tools binary                   | `nil` (Binary auto downloaded to `data_dir`) |
+| `connections_file` | `string` | `Optional` | Path to a json file containing connections (see below)        | `<data_dir>/connections.json`                |
 
 ### Notes
 

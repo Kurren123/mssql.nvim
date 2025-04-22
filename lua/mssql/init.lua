@@ -38,6 +38,15 @@ local function enable_lsp(opts)
 	vim.lsp.config["mssql_ls"] = {
 		cmd = { opts.tools_file or default_path },
 		filetypes = { "sql" },
+		handlers = {
+			["connection/complete"] = function(_, result)
+				if result.errorMessage then
+					vim.notify("Could not connect: " .. result.errorMessage, vim.log.levels.ERROR)
+				else
+					vim.notify("Connected", vim.log.levels.INFO)
+				end
+			end,
+		},
 	}
 	vim.lsp.enable("mssql_ls")
 end
@@ -61,12 +70,19 @@ local function set_auto_commands()
 	})
 end
 
+local plugin_opts
+
 local function setup_async(opts)
+	opts = opts or {}
+	local data_dir = opts.data_dir or joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", "")
 	local default_opts = {
-		data_dir = joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", ""),
+		data_dir = data_dir,
 		tools_file = nil,
+		connections_file = joinpath(data_dir, "connections.json"),
 	}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
+
+	make_directory(opts.data_dir)
 
 	-- if the opts specify a tools file path, don't download.
 	if opts.tools_file then
@@ -76,7 +92,6 @@ local function setup_async(opts)
 		end
 		file:close()
 	else
-		make_directory(opts.data_dir)
 		local config_file = joinpath(opts.data_dir, "config.json")
 		local config = read_json_file(config_file)
 		local download_url = downloader.get_tools_download_url()
@@ -91,8 +106,28 @@ local function setup_async(opts)
 		enable_lsp(opts)
 		set_auto_commands()
 	end
+
+	plugin_opts = opts
 end
 
+local edit_connections = function()
+	if vim.fn.filereadable(plugin_opts.connections_file) == 0 then
+		vim.notify("Connections json file not found. Creating...", vim.log.levels.INFO)
+		local default_connections = [=[
+{
+  "Example": {
+    "server": "localhost",
+    "database": "master",
+    "authenticationType" : "Integrated",
+    "trustServerCertificate" : true
+  }
+}
+]=]
+
+		vim.fn.writefile(vim.split(default_connections, "\n"), plugin_opts.connections_file)
+	end
+	vim.cmd.edit(plugin_opts.connections_file)
+end
 return {
 	setup = function(opts, callback)
 		coroutine.resume(coroutine.create(function()
@@ -112,15 +147,72 @@ return {
 		vim.b[buf].is_temp_name = true
 	end,
 	connect = function()
-		-- TODO: add a safe_assert_async to the utils, which checks if the input is not nil.
-		-- If it's nil, raise an error in vim.notify("...", vim.log.levels.ERROR). Use
-		-- coroutines somehow to only continue if there is no error
+		local client = assert(
+			vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
+			"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
+		)
 
-		--TODO: check this for nil, then call the connect method. Check the connectParams in the
-		--.net code. Can hard code the connection details for now.
+		-- TODO: catch errors thrown in the coroutine and vim.notify instead
 
 		--TODO: pass in the connection pooling argument into the langauge server, and check if it
 		-- actually makes a difference.
-		local client = vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1]
+
+		local f = io.open(plugin_opts.connections_file, "r")
+		if not f then
+			edit_connections()
+			return
+		end
+
+		local content = f:read("*a")
+		f:close()
+		local ok, json = pcall(vim.fn.json_decode, content)
+		assert(
+			ok and type(json) == "table" and not vim.islist(json),
+			"The connections json file must contain a valid json object"
+		)
+
+		vim.ui.select(vim.tbl_keys(json), {
+			prompt = "Choose connection",
+		}, function(con)
+			-- TODO: make a coroutine version of vim.ui.select
+			if con then
+				local connectParams = {
+					ownerUri = vim.fn.expand("%:p"),
+					connection = {
+						options = json[con],
+					},
+				}
+				client:request("connection/connect", connectParams, function(err, _, _, _)
+					-- TODO: make a coroutine version of this
+					if err then
+						vim.notify("Could not connect: " .. err.message, vim.log.levels.ERROR)
+					end
+				end)
+			else
+				vim.notify("No selection made", vim.log.levels.INFO)
+			end
+		end)
+
+		-- // Authentication Types
+		-- public const string Integrated = "Integrated";
+		-- public const string SqlLogin = "SqlLogin";
+		-- public const string AzureMFA = "AzureMFA";
+		-- public const string dstsAuth = "dstsAuth";
+		-- public const string ActiveDirectoryInteractive = "ActiveDirectoryInteractive";
+		-- public const string ActiveDirectoryPassword = "ActiveDirectoryPassword";
+
+		-- local connectParams = {
+		-- 	connection = {
+		-- 		options = {
+		-- 			server = "localhost",
+		-- 			database = "db_live",
+		-- 			authenticationType = "Integrated",
+		-- 			trustServerCertificate = true,
+		-- 			--user = "",
+		-- 			--password = password,
+		-- 		},
+		-- 	},
+		-- }
 	end,
+	edit_connections = edit_connections,
 }
