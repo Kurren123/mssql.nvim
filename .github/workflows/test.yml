@@ -26,7 +26,7 @@ jobs:
 
       - name: Make script executable
         if: runner.os == 'macOS'
-        run: chmod +x ./tests/setup-scripts/linux.sh
+        run: chmod +x ./tests/setup-scripts/mac.sh
       - name: Run macOS setup
         if: runner.os == 'macOS'
         run: ./tests/setup-scripts/mac.sh
