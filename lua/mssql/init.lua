@@ -1,6 +1,41 @@
 local downloader = require("mssql.tools_downloader")
 local joinpath = vim.fs.joinpath
 
+-- resumes the coroutiune, vim notifies any errors
+local function try_resume(co, a)
+	local success, msg = coroutine.resume(co, a)
+
+	if not success then
+		vim.notify(msg, vim.log.levels.ERROR)
+	end
+end
+
+---makes a request to the lsp client
+---@param client vim.lsp.Client
+---@param method string
+local function lsp_request_async(client, method, params)
+	local this = coroutine.running()
+	client:request(method, params, function(err, result, _, _)
+		coroutine.resume(this, result, err)
+	end)
+	return coroutine.yield()
+end
+
+local function ui_select_async(items, opts)
+	local this = coroutine.running()
+	vim.ui.select(items, opts, function(selected)
+		if not selected then
+			vim.notify("No selection made", vim.log.levels.INFO)
+			return
+		end
+		vim.schedule(function()
+			coroutine.resume(this, selected)
+		end)
+	end)
+	local result = coroutine.yield()
+	return result
+end
+
 -- creates the directory if it doesn't exist
 local function make_directory(path)
 	if vim.fn.isdirectory(path) == 0 then
@@ -36,7 +71,11 @@ local function enable_lsp(opts)
 	end
 
 	vim.lsp.config["mssql_ls"] = {
-		cmd = { opts.tools_file or default_path },
+		cmd = {
+			opts.tools_file or default_path,
+			"--enable-connection-pooling",
+			"--enable-sql-authentication-provider",
+		},
 		filetypes = { "sql" },
 		handlers = {
 			["connection/complete"] = function(_, result)
@@ -110,24 +149,59 @@ local function setup_async(opts)
 	plugin_opts = opts
 end
 
-local edit_connections = function()
-	if vim.fn.filereadable(plugin_opts.connections_file) == 0 then
+local edit_connections = function(opts)
+	if vim.fn.filereadable(opts.connections_file) == 0 then
 		vim.notify("Connections json file not found. Creating...", vim.log.levels.INFO)
 		local default_connections = [=[
 {
-  "Example": {
+  "Example (edit this)": {
     "server": "localhost",
     "database": "master",
-    "authenticationType" : "Integrated",
+    "authenticationType" : "SqlLogin",
+    "user" : "Admin",
+    "password" : "Your_Password",
     "trustServerCertificate" : true
   }
 }
 ]=]
-
-		vim.fn.writefile(vim.split(default_connections, "\n"), plugin_opts.connections_file)
+		vim.fn.writefile(vim.split(default_connections, "\n"), opts.connections_file)
 	end
-	vim.cmd.edit(plugin_opts.connections_file)
+	vim.cmd.edit(opts.connections_file)
 end
+
+local connect_async = function(opts)
+	local client = assert(
+		vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
+		"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
+	)
+
+	local f = io.open(opts.connections_file, "r")
+	if not f then
+		edit_connections(opts)
+		return
+	end
+
+	local content = f:read("*a")
+	f:close()
+	local ok, json = pcall(vim.fn.json_decode, content)
+	assert(
+		ok and type(json) == "table" and not vim.islist(json),
+		"The connections json file must contain a valid json object"
+	)
+
+	local con = ui_select_async(vim.tbl_keys(json), { prompt = "Choose connection" })
+
+	local connectParams = {
+		ownerUri = vim.fn.expand("%:p"),
+		connection = {
+			options = json[con],
+		},
+	}
+
+	local _, err = lsp_request_async(client, "connection/connect", connectParams)
+	assert(not err, "Could not connect: " .. err.message, vim.log.levels.ERROR)
+end
+
 return {
 	setup = function(opts, callback)
 		coroutine.resume(coroutine.create(function()
@@ -147,52 +221,9 @@ return {
 		vim.b[buf].is_temp_name = true
 	end,
 	connect = function()
-		local client = assert(
-			vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
-			"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
-		)
-
-		-- TODO: catch errors thrown in the coroutine and vim.notify instead
-
-		--TODO: pass in the connection pooling argument into the langauge server, and check if it
-		-- actually makes a difference.
-
-		local f = io.open(plugin_opts.connections_file, "r")
-		if not f then
-			edit_connections()
-			return
-		end
-
-		local content = f:read("*a")
-		f:close()
-		local ok, json = pcall(vim.fn.json_decode, content)
-		assert(
-			ok and type(json) == "table" and not vim.islist(json),
-			"The connections json file must contain a valid json object"
-		)
-
-		vim.ui.select(vim.tbl_keys(json), {
-			prompt = "Choose connection",
-		}, function(con)
-			-- TODO: make a coroutine version of vim.ui.select
-			if con then
-				local connectParams = {
-					ownerUri = vim.fn.expand("%:p"),
-					connection = {
-						options = json[con],
-					},
-				}
-				client:request("connection/connect", connectParams, function(err, _, _, _)
-					-- TODO: make a coroutine version of this
-					if err then
-						vim.notify("Could not connect: " .. err.message, vim.log.levels.ERROR)
-					end
-				end)
-			else
-				vim.notify("No selection made", vim.log.levels.INFO)
-			end
-		end)
-
+		coroutine.resume(coroutine.create(function()
+			connect_async(plugin_opts)
+		end))
 		-- // Authentication Types
 		-- public const string Integrated = "Integrated";
 		-- public const string SqlLogin = "SqlLogin";
@@ -214,5 +245,7 @@ return {
 		-- 	},
 		-- }
 	end,
-	edit_connections = edit_connections,
+	edit_connections = function()
+		edit_connections(plugin_opts)
+	end,
 }
