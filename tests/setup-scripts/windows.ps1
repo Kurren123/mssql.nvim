@@ -12,8 +12,7 @@ Write-Host "Starting SQL Server container"
 docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$DbPassword" -p "${Port}:1433" -d --name sqlserver mcr.microsoft.com/mssql/server:2022-latest
 
 Write-Host "Installing sqlcmd"
-Invoke-WebRequest -Uri https://aka.ms/sqlcmd-win-install -OutFile installSqlCmd.ps1
-.\installSqlCmd.ps1
+winget install sqlcmd
 
 Write-Host "Waiting for SQL Server to be ready"
 for ($i=0; $i -lt 30; $i++) {
