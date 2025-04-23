@@ -28,7 +28,7 @@ jobs:
           sa-password: ${{ env.DbPassword }}
 
       - name: Run sqlcmd
-        run: sqlcmd -S "${{ env.DbServer }}" -U "${{ env.DbUser }}" -P "${{ env.DbPassword }}" -d "${{ env.DbDatabase }}" -Q "SELECT @@version;" -C
+        run: sqlcmd -S "${{ env.DbServer }}" -U "${{ env.DbUser }}" -P "${{ env.DbPassword }}" -d "${{ env.DbDatabase }}" -i ./.github/workflows/seed.sql -C
 
       - name: Install winget (Windows)
         if: runner.os == 'Windows'
