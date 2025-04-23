@@ -34,7 +34,9 @@ end
 local tests = {
 	require("tests.download_spec"),
 	require("tests.saved_file_completion_spec"),
+	require("tests.edit_connections_spec"),
 	require("tests.new_query_completion_spec"),
+	require("tests.connect_spec"),
 }
 
 coroutine.resume(coroutine.create(function()
