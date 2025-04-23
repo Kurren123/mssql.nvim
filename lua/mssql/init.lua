@@ -193,26 +193,6 @@ return {
 		utils.try_resume(coroutine.create(function()
 			connect_async(plugin_opts)
 		end))
-		-- // Authentication Types
-		-- public const string Integrated = "Integrated";
-		-- public const string SqlLogin = "SqlLogin";
-		-- public const string AzureMFA = "AzureMFA";
-		-- public const string dstsAuth = "dstsAuth";
-		-- public const string ActiveDirectoryInteractive = "ActiveDirectoryInteractive";
-		-- public const string ActiveDirectoryPassword = "ActiveDirectoryPassword";
-
-		-- local connectParams = {
-		-- 	connection = {
-		-- 		options = {
-		-- 			server = "localhost",
-		-- 			database = "db_live",
-		-- 			authenticationType = "Integrated",
-		-- 			trustServerCertificate = true,
-		-- 			--user = "",
-		-- 			--password = password,
-		-- 		},
-		-- 	},
-		-- }
 	end,
 	edit_connections = function()
 		edit_connections(plugin_opts)

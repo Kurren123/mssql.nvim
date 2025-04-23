@@ -10,7 +10,11 @@ An SQL Server plugin for neovim. **Not ready yet!** If you are looking for somet
 - [x] Basic LSP configuration
 - [x] Basic (disconected) auto complete for saved sql files
 - [x] Auto complete for new queries (unsaved buffer)
-- [ ] Connect to a database
+- [x] Connect to a database
+- [ ] Disconnect
+- [ ] Have auto complete include database objects
+- [ ] Execute queries (first few lines only)
+- [ ] Switch database
 
 ## Requirements
 
@@ -39,21 +43,54 @@ end)
 
 ### Options
 
-| Name               | Type     | Required?  | Description                                                   | Default                                      |
-| ------------------ | -------- | ---------- | ------------------------------------------------------------- | -------------------------------------------- |
-| `data_dir`         | `string` | `Optional` | Directory to store download tools and internal config options | `vim.fn.stdpath("data")`                     |
-| `tools_file`       | `string` | `Optional` | Path to an existing SQL Server tools binary                   | `nil` (Binary auto downloaded to `data_dir`) |
-| `connections_file` | `string` | `Optional` | Path to a json file containing connections (see below)        | `<data_dir>/connections.json`                |
+| Name               | Type      | Description                                                                                           | Default                                      |
+| ------------------ | --------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `data_dir`         | `string?` | Directory to store download tools and internal config options                                         | `vim.fn.stdpath("data")`                     |
+| `tools_file`       | `string?` | Path to an existing [SQL tools service](https://github.com/microsoft/sqltoolsservice/releases) binary | `nil` (Binary auto downloaded to `data_dir`) |
+| `connections_file` | `string?` | Path to a json file containing connections (see below)                                                | `<data_dir>/connections.json`                |
 
 ### Notes
 
 - `setup()` runs asynchronously as it may take some time to first download and extract the sql tools. Pass a callback as the second argument if you need to run code after initialization.
 
-## Provided functions
+## Usage
 
 ```lua
 local mssql = require("mssql")
 
+-- Open sql connections file for editing. See below for more
+mssql.edit_connections()
+
 -- Open a new buffer for sql queries
 mssql.new_query()
+
+-- Connect (you'll be prompted to choose a connection)
+mssql.connect()
 ```
+
+## Connections json file
+
+The format is `"connection name": connection object`. Eg:
+
+```json
+{
+  "Connection A": {
+    "server": "localhost",
+    "database": "dbA",
+    "authenticationType": "SqlLogin",
+    "user": "Admin",
+    "password": "Your_Password",
+    "trustServerCertificate": true
+  },
+  "Connection B": {
+    "server": "AnotherServer",
+    "database": "dbB",
+    "authenticationType": "Integrated"
+  },
+  "Connection C": {
+    "connectionString": "Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;"
+  }
+}
+```
+
+[Full details of the connection json here](docs/Connections-Json.md).
