@@ -11,14 +11,28 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
+    env:
+      DbServer: localhost
+      DbUser: sa
+      DbPassword: Test_Password_123
+      DbDatabase: tempdb
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Install sql server
+        uses: potatoqualitee/mssqlsuite@v1.8
+        with:
+          install: sqlengine, sqlclient
+          sa-password: ${{ env.DbPassword }}
+
+      - name: Run sqlcmd
+        run: sqlcmd -S "${{ env.DbServer }}" -U "${{ env.DbUser }}" -P "${{ env.DbPassword }}" -d "${{ env.DbDatabase }}" -Q "SELECT @@version;" -C
+
       - name: Install winget (Windows)
         if: runner.os == 'Windows'
         uses: Cyberboss/install-winget@v1
-
       - name: Run Windows setup
         if: runner.os == 'Windows'
         run: ./tests/setup-scripts/windows.ps1
