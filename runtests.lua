@@ -37,6 +37,7 @@ local tests = {
 	require("tests.edit_connections_spec"),
 	require("tests.new_query_completion_spec"),
 	require("tests.connect_spec"),
+	require("tests.dbo_completion_spec"),
 }
 
 coroutine.resume(coroutine.create(function()
