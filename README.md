@@ -11,8 +11,8 @@ An SQL Server plugin for neovim. **Not ready yet!** If you are looking for somet
 - [x] Basic (disconected) auto complete for saved sql files
 - [x] Auto complete for new queries (unsaved buffer)
 - [x] Connect to a database
+- [x] Have auto complete include database objects
 - [ ] Disconnect
-- [ ] Have auto complete include database objects
 - [ ] Execute queries (first few lines only)
 - [ ] Switch database
 

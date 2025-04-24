@@ -158,7 +158,7 @@ local connect_async = function(opts)
 	local con = utils.ui_select_async(vim.tbl_keys(json), { prompt = "Choose connection" })
 
 	local connectParams = {
-		ownerUri = vim.fn.expand("%:p"),
+		ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")),
 		connection = {
 			options = json[con],
 		},

@@ -22,31 +22,12 @@ Getting the [minimsed inputs](./minimised.json) for code completion of an unopen
 
 Update: This may not be needed, see below
 
-## Unsaved buffer lsp messages
+## Uri paths
 
-The following messages are sent after initialization when a buffer requests completion items:
+The Language Server Protocol (and therefore mssql langauge server) requires file paths to be passed as [file uris](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri). Eg:
 
-```json
-{"method":"textDocument/didOpen","params":{"textDocument":{"uri":"file://","version":0,"languageId":"sql","text":"\r\n"}},"jsonrpc":"2.0"}
-
-{"method":"textDocument/completion","params":{"context":{"triggerKind":1},"textDocument":{"uri":"file://"},"position":{"line":0,"character":0}},"id":2,"jsonrpc":"2.0"}
+```
+file:///c:/project/readme.md
 ```
 
-This is then returned:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "2",
-  "error": {
-    "code": 0,
-    "message": "The path is empty. (Parameter 'path')",
-    "data": null
-  }
-}
-```
-
-## Todo:
-
-- Report lsp errors back to the user. Is the error property a standard lsp thing? Is there a standard way to do this in nvim?
-- Vscode sends an "untitled-1" file name to the lsp for unopened files. Send something similar and see if the completions are correct. What happens in vscode when the file is then saved? Is the same message sent from neovim when the new buffer is saved?
+The function `vim.uri_from_fname("c:/project/readme.md")` will convert from a filepath to uri syntax. Use URIs when passing paths to the language server, such as the `connect` method.
