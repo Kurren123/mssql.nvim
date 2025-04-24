@@ -108,11 +108,10 @@ local function setup_async(opts)
 			config.last_downloaded_from = download_url
 			write_json_file(config_file, config)
 		end
-
-		enable_lsp(opts)
-		set_auto_commands()
 	end
 
+	enable_lsp(opts)
+	set_auto_commands()
 	plugin_opts = opts
 end
 
