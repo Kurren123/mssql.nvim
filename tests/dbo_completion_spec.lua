@@ -9,7 +9,7 @@ local test_completions = function(sql, expected_completion_item)
 	})
 
 	-- move to the end
-	vim.api.nvim_win_set_cursor(0, { 1, sql:len() - 1 })
+	vim.api.nvim_win_set_cursor(0, { 1, #sql })
 	local items = test_utils.get_completion_items()
 	assert(#items > 0, "Neovim didn't provide any completion items")
 	assert(

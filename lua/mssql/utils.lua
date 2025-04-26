@@ -13,11 +13,13 @@ end
 local try_resume =
 	-- resumes the coroutiune, vim notifies any errors
 	function(co, ...)
-		local success, msg = coroutine.resume(co, ...)
+		local result, errmsg = coroutine.resume(co, ...)
 
-		if not success then
-			vim.notify(msg, vim.log.levels.ERROR)
+		if not result then
+			vim.notify(errmsg, vim.log.levels.ERROR)
 		end
+
+		return result
 	end
 return {
 	contains = contains,
@@ -28,18 +30,23 @@ return {
 		end)
 		coroutine.yield()
 	end,
-	try_resume = try_resume,
-	---makes a request to the lsp client
-	---@param client vim.lsp.Client
+	---makes a request to the mssql lsp client
 	---@param method string
-	lsp_request_async = function(client, method, params)
+	---@param params any
+	---@return any
+	---@return lsp.ResponseError?
+	lsp_request_async = function(method, params)
 		local this = coroutine.running()
+		local client = assert(
+			vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
+			"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
+		)
 		client:request(method, params, function(err, result, _, _)
-			try_resume(this, result, err)
+			coroutine.resume(this, result, err)
 		end)
 		return coroutine.yield()
 	end,
-
+	try_resume = try_resume,
 	ui_select_async = function(items, opts)
 		local this = coroutine.running()
 		vim.ui.select(items, opts, function(selected)
@@ -48,7 +55,7 @@ return {
 				return
 			end
 			vim.schedule(function()
-				try_resume(this, selected)
+				coroutine.resume(this, selected)
 			end)
 		end)
 		local result = coroutine.yield()

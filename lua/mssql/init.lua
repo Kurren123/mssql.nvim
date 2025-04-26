@@ -136,11 +136,6 @@ local edit_connections = function(opts)
 end
 
 local connect_async = function(opts)
-	local client = assert(
-		vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
-		"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
-	)
-
 	local f = io.open(opts.connections_file, "r")
 	if not f then
 		edit_connections(opts)
@@ -164,7 +159,7 @@ local connect_async = function(opts)
 		},
 	}
 
-	local _, err = utils.lsp_request_async(client, "connection/connect", connectParams)
+	local _, err = utils.lsp_request_async("connection/connect", connectParams)
 	if err then
 		error("Could not connect: " .. err.message)
 	end

@@ -12,8 +12,8 @@ return {
 		test_utils.defer_async(3000)
 		assert(#vim.lsp.get_clients({ bufnr = 0 }) == 1, "No lsp clients attached")
 
-		-- move to the end of the "SE" in SELECT
-		vim.api.nvim_win_set_cursor(0, { 1, 2 })
+		-- move to the first E in SELECT
+		vim.api.nvim_win_set_cursor(0, { 1, 1 })
 		local items = test_utils.get_completion_items()
 		assert(#items > 0, "Neovim didn't provide any completion items")
 		assert(utils.contains(items, "SELECT"))
