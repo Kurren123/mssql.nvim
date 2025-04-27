@@ -55,7 +55,7 @@ return {
 				return
 			end
 			vim.schedule(function()
-				coroutine.resume(this, selected)
+				try_resume(this, selected)
 			end)
 		end)
 		local result = coroutine.yield()
