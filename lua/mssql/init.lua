@@ -180,6 +180,18 @@ local connect_async = function(opts)
 	end
 end
 
+local disconnect_async = function()
+	local result, err =
+		utils.lsp_request_async("connection/disconnect", { ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")) })
+	if err then
+		error("Error disconnecting: " .. err.message)
+	elseif not result then
+		error("Could not disconnect")
+	else
+		vim.notify("Disconnected", vim.log.levels.INFO)
+	end
+end
+
 return {
 	setup = function(opts, callback)
 		utils.try_resume(coroutine.create(function()
@@ -198,6 +210,7 @@ return {
 		vim.cmd("setfiletype sql")
 		vim.b[buf].is_temp_name = true
 	end,
+	-- Connect the current buffer (you'll be prompted to choose a connection)
 	connect = function()
 		utils.try_resume(coroutine.create(function()
 			connect_async(plugin_opts)
@@ -205,5 +218,21 @@ return {
 	end,
 	edit_connections = function()
 		edit_connections(plugin_opts)
+	end,
+	-- Rebuilds the intellisense cache
+	refresh_intellisense_cache = function()
+		local client = assert(
+			vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
+			"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
+		)
+
+		client:notify("textDocument/rebuildIntelliSense", { ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")) })
+
+		vim.notify("Refreshing intellisense...", vim.log.levels.INFO)
+	end,
+	disconnect = function()
+		utils.try_resume(coroutine.create(function()
+			disconnect_async()
+		end))
 	end,
 }

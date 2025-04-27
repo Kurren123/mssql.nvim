@@ -13,9 +13,11 @@ An SQL Server plugin for neovim. **Not ready yet!** If you are looking for somet
 - [x] Connect to a database
 - [x] Have auto complete include database objects
 - [x] Cross database query autocomplete
-- [ ] Disconnect
+- [x] Refresh intellisense cache
+- [x] Disconnect
 - [ ] Execute queries (first few lines only)
 - [ ] Switch database
+- [ ] Auto format
 
 ## Requirements
 
@@ -65,8 +67,14 @@ mssql.edit_connections()
 -- Open a new buffer for sql queries
 mssql.new_query()
 
--- Connect (you'll be prompted to choose a connection)
+-- Connect the current buffer (you'll be prompted to choose a connection)
 mssql.connect()
+
+-- Rebuild the intellisense cache
+mssql.refresh_intellisense_cache()
+
+-- Disconnects the current buffer
+mssql.disconnect()
 ```
 
 ## Connections json file
