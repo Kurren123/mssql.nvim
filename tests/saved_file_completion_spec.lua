@@ -17,6 +17,5 @@ return {
 		local items = test_utils.get_completion_items()
 		assert(#items > 0, "Neovim didn't provide any completion items")
 		assert(utils.contains(items, "SELECT"))
-		vim.cmd("stopinsert")
 	end,
 }

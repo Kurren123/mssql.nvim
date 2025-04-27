@@ -16,6 +16,7 @@ return {
 		-- Completion results are async
 		defer_async(500)
 		local items = vim.fn.complete_info({ "items" }).items or {}
+		vim.cmd("stopinsert")
 		return vim.iter(items)
 			:map(function(item)
 				return item.word or item.abbr

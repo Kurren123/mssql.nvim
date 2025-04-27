@@ -48,11 +48,26 @@ local function enable_lsp(opts)
 			["connection/complete"] = function(_, result)
 				if result.errorMessage then
 					vim.notify("Could not connect: " .. result.errorMessage, vim.log.levels.ERROR)
+					return result,
+						vim.lsp.rpc.rpc_response_error(
+							vim.lsp.protocol.ErrorCodes.UnknownErrorCode,
+							result.errorMessage,
+							nil
+						)
 				else
 					vim.notify("Connected", vim.log.levels.INFO)
+					return result, nil
 				end
 			end,
 		},
+		["textDocument/intelliSenseReady"] = function(err, result)
+			if err then
+				vim.notify("Could not start intellisense: " .. vim.inspect(err), vim.log.levels.ERROR)
+			else
+				vim.notify("Intellisense ready", vim.log.levels.INFO)
+			end
+			return result, err
+		end,
 	}
 	vim.lsp.enable("mssql_ls")
 end

@@ -31,3 +31,31 @@ file:///c:/project/readme.md
 ```
 
 The function `vim.uri_from_fname("c:/project/readme.md")` will convert from a filepath to uri syntax. Use URIs when passing paths to the language server, such as the `connect` method.
+
+## Timeouts
+
+Many things such as completion requests have internal timeouts within the language. Eg for [completion requests](https://github.com/microsoft/sqltoolsservice/blob/48f446723cfa04ae3f0e3734cf61488fcf178819/src/Microsoft.SqlTools.ServiceLayer/LanguageServices/Completion/CompletionService.cs#L95) we eventually get to:
+
+```csharp
+QueueItem queueItem = this.BindingQueue.QueueBindingOperation(
+    key: scriptParseInfo.ConnectionKey,
+    bindingTimeout: LanguageService.BindingTimeout,
+    bindOperation: (bindingContext, cancelToken) =>
+    {
+        return CreateCompletionsFromSqlParser(connInfo, scriptParseInfo, scriptDocumentInfo, bindingContext.MetadataDisplayInfoProvider);
+    },
+    timeoutOperation: (bindingContext) =>
+    {
+        // return the default list if the connected bind fails
+        return CreateDefaultCompletionItems(scriptParseInfo, scriptDocumentInfo, useLowerCaseSuggestions);
+    },
+    errorHandler: ex =>
+    {
+        // return the default list if an unexpected exception occurs
+        return CreateDefaultCompletionItems(scriptParseInfo, scriptDocumentInfo, useLowerCaseSuggestions);
+    });
+```
+
+So if sql server doesn't get back to the langauage server within the timeout, the default completion items are returned (standard keywords, nothing from sql server). In this case, the the timeout is: `internal const int BindingTimeout = 500;`
+
+This probably happens in vscode too. We can handle this in end to end tests by triggering auto complete more than once, as the query results from sql are probably cached so will fire quicker the second time.
