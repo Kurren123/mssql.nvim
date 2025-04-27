@@ -59,15 +59,16 @@ local function enable_lsp(opts)
 					return result, nil
 				end
 			end,
+
+			["textDocument/intelliSenseReady"] = function(err, result)
+				if err then
+					vim.notify("Could not start intellisense: " .. vim.inspect(err), vim.log.levels.ERROR)
+				else
+					vim.notify("Intellisense ready", vim.log.levels.INFO)
+				end
+				return result, err
+			end,
 		},
-		["textDocument/intelliSenseReady"] = function(err, result)
-			if err then
-				vim.notify("Could not start intellisense: " .. vim.inspect(err), vim.log.levels.ERROR)
-			else
-				vim.notify("Intellisense ready", vim.log.levels.INFO)
-			end
-			return result, err
-		end,
 	}
 	vim.lsp.enable("mssql_ls")
 end
