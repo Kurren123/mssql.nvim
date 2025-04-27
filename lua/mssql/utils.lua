@@ -1,3 +1,22 @@
+---@param msg string
+---@param level vim.log.levels
+local function log(msg, level)
+	vim.notify(msg, level, {
+		id = "MSSQL",
+		title = "MSSQL",
+		plugin = "MSSQL",
+	})
+end
+
+---Like assert, but doesn't prepend the
+---file name and line number
+local function safe_assert(item, message)
+	if not item then
+		error(message, 0) -- level 0 = no file/line info
+	end
+	return item
+end
+
 local function contains(tbl, element)
 	if not table then
 		return false
@@ -16,14 +35,14 @@ local try_resume =
 		local result, errmsg = coroutine.resume(co, ...)
 
 		if not result then
-			vim.notify(errmsg, vim.log.levels.ERROR)
+			log(errmsg, vim.log.levels.ERROR)
 		end
 
 		return result
 	end
 
 local get_lsp_client = function()
-	return assert(
+	return safe_assert(
 		vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
 		"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
 	)
@@ -57,7 +76,7 @@ return {
 		local this = coroutine.running()
 		vim.ui.select(items, opts, function(selected)
 			if not selected then
-				vim.notify("No selection made", vim.log.levels.INFO)
+				log("No selection made", vim.log.levels.INFO)
 				return
 			end
 			vim.schedule(function()
@@ -67,4 +86,11 @@ return {
 		local result = coroutine.yield()
 		return result
 	end,
+	log_info = function(msg)
+		log(msg, vim.log.levels.INFO)
+	end,
+	log_error = function(msg)
+		log(msg, vim.log.levels.ERROR)
+	end,
+	safe_assert = safe_assert,
 }

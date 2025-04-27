@@ -27,7 +27,7 @@ local function write_json_file(path, table)
 		file:write(text)
 		file:close()
 	else
-		error("Could not open file: " .. path)
+		error("Could not open file: " .. path, 0)
 	end
 end
 
@@ -47,7 +47,7 @@ local function enable_lsp(opts)
 		handlers = {
 			["connection/complete"] = function(_, result)
 				if result.errorMessage then
-					vim.notify("Could not connect: " .. result.errorMessage, vim.log.levels.ERROR)
+					utils.log_error("Could not connect: " .. result.errorMessage)
 					return result,
 						vim.lsp.rpc.rpc_response_error(
 							vim.lsp.protocol.ErrorCodes.UnknownErrorCode,
@@ -55,16 +55,16 @@ local function enable_lsp(opts)
 							nil
 						)
 				else
-					vim.notify("Connected", vim.log.levels.INFO)
+					utils.log_info("Connected")
 					return result, nil
 				end
 			end,
 
 			["textDocument/intelliSenseReady"] = function(err, result)
 				if err then
-					vim.notify("Could not start intellisense: " .. vim.inspect(err), vim.log.levels.ERROR)
+					utils.log_error("Could not start intellisense: " .. vim.inspect(err))
 				else
-					vim.notify("Intellisense ready", vim.log.levels.INFO)
+					utils.log_info("Intellisense ready")
 				end
 				return result, err
 			end,
@@ -110,7 +110,7 @@ local function setup_async(opts)
 	if opts.tools_file then
 		local file = io.open(opts.tools_file, "r")
 		if not file then
-			error("No sql tools file found at " .. opts.tools_file)
+			error("No sql tools file found at " .. opts.tools_file, 0)
 		end
 		file:close()
 	else
@@ -133,7 +133,7 @@ end
 
 local edit_connections = function(opts)
 	if vim.fn.filereadable(opts.connections_file) == 0 then
-		vim.notify("Connections json file not found. Creating...", vim.log.levels.INFO)
+		utils.log_info("Connections json file not found. Creating...")
 		local default_connections = [=[
 {
   "Example (edit this)": {
@@ -164,7 +164,7 @@ local connect_async = function(opts)
 	local content = f:read("*a")
 	f:close()
 	local ok, json = pcall(vim.fn.json_decode, content)
-	assert(
+	utils.safe_assert(
 		ok and type(json) == "table" and not vim.islist(json),
 		"The connections json file must contain a valid json object"
 	)
@@ -180,7 +180,7 @@ local connect_async = function(opts)
 
 	local _, err = utils.lsp_request_async("connection/connect", connectParams)
 	if err then
-		error("Could not connect: " .. err.message)
+		error("Could not connect: " .. err.message, 0)
 	end
 end
 
@@ -188,11 +188,11 @@ local disconnect_async = function()
 	local result, err =
 		utils.lsp_request_async("connection/disconnect", { ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")) })
 	if err then
-		error("Error disconnecting: " .. err.message)
+		error("Error disconnecting: " .. err.message, 0)
 	elseif not result then
-		error("Could not disconnect")
+		error("Could not disconnect", 0)
 	else
-		vim.notify("Disconnected", vim.log.levels.INFO)
+		utils.log_info("Disconnected")
 	end
 end
 
@@ -225,14 +225,9 @@ return {
 	end,
 	-- Rebuilds the intellisense cache
 	refresh_intellisense_cache = function()
-		local client = assert(
-			vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
-			"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
-		)
-
+		local client = utils.get_lsp_client()
 		client:notify("textDocument/rebuildIntelliSense", { ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")) })
-
-		vim.notify("Refreshing intellisense...", vim.log.levels.INFO)
+		utils.log_info("Refreshing intellisense...")
 	end,
 	disconnect = function()
 		utils.try_resume(coroutine.create(function()

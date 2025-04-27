@@ -1,3 +1,4 @@
+local utils = require("mssql.utils")
 local joinpath = vim.fs.joinpath
 local M = {}
 
@@ -23,12 +24,12 @@ M.get_tools_download_url = function()
 	local arch = jit.arch
 
 	if not urls[os] then
-		error("Your OS " .. os .. " is not supported. It must be Windows, Linux or OSX.")
+		error("Your OS " .. os .. " is not supported. It must be Windows, Linux or OSX.", 0)
 	end
 
 	local url = urls[os][arch]
 	if not url then
-		error("Your system architecture " .. arch .. " is not supported. It can either be x64 or arm64.")
+		error("Your system architecture " .. arch .. " is not supported. It can either be x64 or arm64.", 0)
 	end
 
 	return url
@@ -89,22 +90,22 @@ M.download_tools_async = function(url, data_folder)
 		}
 	end
 
-	vim.notify("Downloading sql tools...", vim.log.levels.INFO)
+	utils.log_info("Downloading sql tools...")
 
 	local co = coroutine.running()
 	vim.fn.jobstart(download_job, {
 		on_exit = function(_, code)
 			if code ~= 0 then
-				vim.notify("Sql tools download error: exit code " .. code, vim.log.levels.ERROR)
+				utils.log_error("Sql tools download error: exit code " .. code)
 			else
-				vim.notify("Downloaded successfully", vim.log.levels.INFO)
+				utils.log_info("Downloaded successfully")
 				coroutine.resume(co)
 			end
 		end,
 		stderr_buffered = true,
 		on_stderr = function(_, data)
 			if data and data[1] ~= "" then
-				vim.notify("Sql tools download error: " .. table.concat(data, "\n"), vim.log.levels.ERROR)
+				utils.log_error("Sql tools download error: " .. table.concat(data, "\n"))
 			end
 		end,
 	})
