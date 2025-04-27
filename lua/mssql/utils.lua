@@ -21,6 +21,14 @@ local try_resume =
 
 		return result
 	end
+
+local get_lsp_client = function()
+	return assert(
+		vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
+		"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
+	)
+end
+
 return {
 	contains = contains,
 	wait_for_schedule_async = function()
@@ -30,6 +38,7 @@ return {
 		end)
 		coroutine.yield()
 	end,
+	get_lsp_client = get_lsp_client,
 	---makes a request to the mssql lsp client
 	---@param method string
 	---@param params any
@@ -37,10 +46,7 @@ return {
 	---@return lsp.ResponseError?
 	lsp_request_async = function(method, params)
 		local this = coroutine.running()
-		local client = assert(
-			vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
-			"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
-		)
+		local client = get_lsp_client()
 		client:request(method, params, function(err, result, _, _)
 			coroutine.resume(this, result, err)
 		end)

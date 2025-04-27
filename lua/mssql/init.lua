@@ -151,6 +151,9 @@ local edit_connections = function(opts)
 end
 
 local connect_async = function(opts)
+	-- Check for an lsp client before prompting the user for connection
+	utils.get_lsp_client()
+
 	local f = io.open(opts.connections_file, "r")
 	if not f then
 		edit_connections(opts)
