@@ -15,7 +15,11 @@ An SQL Server plugin for neovim. **Not ready yet!** If you are looking for somet
 - [x] Cross database query autocomplete
 - [x] Refresh intellisense cache
 - [x] Disconnect
-- [ ] Execute queries (first few lines only)
+- [ ] Execute queries (first 100 lines only)
+  - Each batch will open in a new buffer. Mark the buffer as a result buffer.
+  - Upon executing, delete all existing result buffers.
+- [ ] Key maps, docs, announce initial release
+- [ ] Execute queries with a configurable memory limit
 - [ ] Switch database
 - [ ] Auto format
 
