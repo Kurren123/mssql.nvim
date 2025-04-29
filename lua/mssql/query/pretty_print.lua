@@ -58,7 +58,7 @@ local function row_to_string(row, widths)
 	return "| " .. table.concat(padded_cells, " | ") .. " |"
 end
 
-local function query_results_to_string(query_results, max_width)
+return function(query_results, max_width)
 	truncate_values(query_results, max_width)
 
 	if not (query_results or query_results[1]) then
@@ -76,5 +76,3 @@ local function query_results_to_string(query_results, max_width)
 
 	return table.concat(lines, "\n")
 end
-
-print(query_results_to_string({ { "name", "age as of last year" }, { "Cassandra", 15 }, { "Bob", 30 } }, 100))
