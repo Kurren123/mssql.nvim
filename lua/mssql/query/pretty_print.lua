@@ -10,36 +10,26 @@ local function truncate_values(table, limit)
 	end
 end
 
-local function column_width(table, column_index)
-	return vim.iter(table)
+local function column_width(column_header, rows, column_index)
+	local row_max = vim.iter(rows)
 		:map(function(record)
 			return #record[column_index]
 		end)
 		:fold(0, math.max)
+
+	return math.max(#column_header, row_max)
 end
 
-local function column_widths(table)
-	if not (table or table[1]) then
+local function column_widths(column_headers, rows)
+	if not column_headers then
 		return {}
 	end
 
-	return vim.iter(ipairs(table[1]))
-		:map(function(column_index)
-			return column_width(table, column_index)
+	return vim.iter(ipairs(column_headers))
+		:map(function(column_index, column_header)
+			return column_width(column_header, rows, column_index)
 		end)
 		:totable()
-end
-
-local function header_divider(widths)
-	if not widths then
-		return ""
-	end
-	local dashes = vim.iter(widths)
-		:map(function(w)
-			return string.rep("-", w + 2)
-		end)
-		:totable()
-	return "+" .. table.concat(dashes, "+") .. "+"
 end
 
 local function right_pad(str, len, char)
@@ -58,21 +48,37 @@ local function row_to_string(row, widths)
 	return "| " .. table.concat(padded_cells, " | ") .. " |"
 end
 
-return function(query_results, max_width)
-	truncate_values(query_results, max_width)
-
-	if not (query_results or query_results[1]) then
+local function header_divider(widths)
+	if not widths then
 		return ""
 	end
 
-	local widths = column_widths(query_results)
+	local dashes_row = vim.iter(widths)
+		:map(function(width)
+			return string.rep("-", width)
+		end)
+		:totable()
+	return row_to_string(dashes_row, widths)
+end
+
+local function pretty_print(column_headers, rows, max_width)
+	if not column_headers then
+		return ""
+	end
+
+	truncate_values(rows, max_width)
+
+	local widths = column_widths(column_headers, rows)
 	local divider = header_divider(widths)
 
-	local lines = { divider, row_to_string(query_results[1], widths), divider }
-	for i = 2, #query_results do
-		table.insert(lines, row_to_string(query_results[i], widths))
+	local lines = { row_to_string(column_headers, widths), divider }
+	for _, row in ipairs(rows) do
+		table.insert(lines, row_to_string(row, widths))
 	end
-	table.insert(lines, divider)
 
 	return table.concat(lines, "\n")
 end
+
+print(pretty_print({ "age", "name" }, { { "bob", 10 }, { "sarah", 64 } }, 100))
+
+return pretty_print

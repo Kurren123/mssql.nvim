@@ -37,7 +37,8 @@ require("mssql.nvim").setup()
 require("mssql.nvim").setup({
   data_dir = "/custom/path",
   tools_file = "/path/to/sqltools/executable",
-  connections_file = "/path/to/connections.json"
+  connections_file = "/path/to/connections.json",
+  max_rows = 100
 })
 
 -- With callback
@@ -55,6 +56,7 @@ end)
 | `data_dir`         | `string?` | Directory to store download tools and internal config options                                         | `vim.fn.stdpath("data")`                     |
 | `tools_file`       | `string?` | Path to an existing [SQL tools service](https://github.com/microsoft/sqltoolsservice/releases) binary | `nil` (Binary auto downloaded to `data_dir`) |
 | `connections_file` | `string?` | Path to a json file containing connections (see below)                                                | `<data_dir>/connections.json`                |
+| `max_rows`         | `int?`    | Max rows to return for queries. Needed so that large results don't crash neovim.                      | `100`                                        |
 
 ### Notes
 

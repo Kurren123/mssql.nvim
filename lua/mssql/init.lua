@@ -1,5 +1,6 @@
 local downloader = require("mssql.tools_downloader")
 local utils = require("mssql.utils")
+local query = require("mssql.query")
 
 local joinpath = vim.fs.joinpath
 
@@ -31,11 +32,42 @@ local function write_json_file(path, table)
 	end
 end
 
+local get_handlers = function()
+	return {
+		["connection/complete"] = function(_, result)
+			if result.errorMessage then
+				utils.log_error("Could not connect: " .. result.errorMessage)
+				return result,
+					vim.lsp.rpc.rpc_response_error(
+						vim.lsp.protocol.ErrorCodes.UnknownErrorCode,
+						result.errorMessage,
+						nil
+					)
+			else
+				utils.log_info("Connected")
+				return result, nil
+			end
+		end,
+
+		["textDocument/intelliSenseReady"] = function(err, result)
+			if err then
+				utils.log_error("Could not start intellisense: " .. vim.inspect(err))
+			else
+				utils.log_info("Intellisense ready")
+			end
+			return result, err
+		end,
+	}
+end
+
 local function enable_lsp(opts)
 	local default_path = joinpath(opts.data_dir, "sqltools/MicrosoftSqlToolsServiceLayer")
 	if jit.os == "Windows" then
 		default_path = default_path .. ".exe"
 	end
+
+	local handlers = get_handlers()
+	query.add_lsp_handlers(handlers, opts.max_rows)
 
 	vim.lsp.config["mssql_ls"] = {
 		cmd = {
@@ -44,32 +76,9 @@ local function enable_lsp(opts)
 			"--enable-sql-authentication-provider",
 		},
 		filetypes = { "sql" },
-		handlers = {
-			["connection/complete"] = function(_, result)
-				if result.errorMessage then
-					utils.log_error("Could not connect: " .. result.errorMessage)
-					return result,
-						vim.lsp.rpc.rpc_response_error(
-							vim.lsp.protocol.ErrorCodes.UnknownErrorCode,
-							result.errorMessage,
-							nil
-						)
-				else
-					utils.log_info("Connected")
-					return result, nil
-				end
-			end,
-
-			["textDocument/intelliSenseReady"] = function(err, result)
-				if err then
-					utils.log_error("Could not start intellisense: " .. vim.inspect(err))
-				else
-					utils.log_info("Intellisense ready")
-				end
-				return result, err
-			end,
-		},
+		handlers = handlers,
 	}
+
 	vim.lsp.enable("mssql_ls")
 end
 
@@ -101,6 +110,7 @@ local function setup_async(opts)
 		data_dir = data_dir,
 		tools_file = nil,
 		connections_file = joinpath(data_dir, "connections.json"),
+		max_rows = 100,
 	}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 
@@ -153,7 +163,7 @@ end
 
 local connect_async = function(opts)
 	-- Check for an lsp client before prompting the user for connection
-	utils.get_lsp_client()
+	local client = utils.get_lsp_client()
 
 	local f = io.open(opts.connections_file, "r")
 	if not f then
@@ -178,15 +188,19 @@ local connect_async = function(opts)
 		},
 	}
 
-	local _, err = utils.lsp_request_async("connection/connect", connectParams)
+	local _, err = utils.lsp_request_async(client, "connection/connect", connectParams)
 	if err then
 		error("Could not connect: " .. err.message, 0)
 	end
 end
 
 local disconnect_async = function()
-	local result, err =
-		utils.lsp_request_async("connection/disconnect", { ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")) })
+	local client = utils.get_lsp_client()
+	local result, err = utils.lsp_request_async(
+		client,
+		"connection/disconnect",
+		{ ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")) }
+	)
 	if err then
 		error("Error disconnecting: " .. err.message, 0)
 	elseif not result then
@@ -232,6 +246,11 @@ return {
 	disconnect = function()
 		utils.try_resume(coroutine.create(function()
 			disconnect_async()
+		end))
+	end,
+	execute_query = function()
+		utils.try_resume(coroutine.create(function()
+			query.execute_async()
 		end))
 	end,
 }

@@ -59,3 +59,46 @@ QueueItem queueItem = this.BindingQueue.QueueBindingOperation(
 So if sql server doesn't get back to the langauage server within the timeout, the default completion items are returned (standard keywords, nothing from sql server). In this case, the the timeout is: `internal const int BindingTimeout = 500;`
 
 This probably happens in vscode too. We can handle this in end to end tests by triggering auto complete more than once, as the query results from sql are probably cached so will fire quicker the second time.
+
+## Queries, batches and results sets
+
+```
+Query
+  - Batches
+    - Result sets
+    - Messages
+```
+
+As far as I can tell:
+
+1. A query is the whole text that gets executed. It contains multiple batches separated by GO statements. Each batch is sent to Sql server independantly.
+2. A batch contains multiple sql statements, possibly separated by semicolons. Mulitple messages may also be returned from sql server when executing a batch.
+3. An sql statement may or may not return a result set.
+
+Eg:
+
+```sql
+SELECT * FROM Person;
+UPDATE Person SET SomeValue = 1;
+SELECT * FROM Car;
+GO
+SELECT * FROM Address;
+```
+
+This is a single query. It would contain the following:
+
+```
+- Batch 1:
+  - Messages:
+    - (10 rows affected)
+    - (10 rows affected)
+    - (30 rows affected)
+  - Result sets:
+    - Result set 1: Rows from Person
+    - Result set 2: Rows from Car
+- Batch 2:
+  - Messages:
+    - (40 rows affected)
+  - Result sets:
+    - Result set 1: Rows from Address
+```
