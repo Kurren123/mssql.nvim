@@ -57,6 +57,7 @@ end)
 | `tools_file`       | `string?` | Path to an existing [SQL tools service](https://github.com/microsoft/sqltoolsservice/releases) binary | `nil` (Binary auto downloaded to `data_dir`) |
 | `connections_file` | `string?` | Path to a json file containing connections (see below)                                                | `<data_dir>/connections.json`                |
 | `max_rows`         | `int?`    | Max rows to return for queries. Needed so that large results don't crash neovim.                      | `100`                                        |
+| `max_column_width` | int?      | If a result row has a field text length larger than this it will be truncated when displayed          | `100`                                        |
 
 ### Notes
 

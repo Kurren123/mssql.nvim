@@ -50,11 +50,10 @@ local get_lsp_client = function(owner_uri)
 		bufnr = vim.iter(ipairs(vim.api.nvim_list_bufs())):find(function(i, _)
 			return vim.uri_from_fname(vim.api.nvim_buf_get_name(i)) == owner_uri
 		end)
+		safe_assert(bufnr, "No buffer found with filename " .. owner_uri)
 	else
 		bufnr = 0
 	end
-
-	safe_assert(bufnr, "No buffer found with filename " .. owner_uri)
 
 	return safe_assert(
 		vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],

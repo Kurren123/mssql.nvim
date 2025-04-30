@@ -76,9 +76,7 @@ local function pretty_print(column_headers, rows, max_width)
 		table.insert(lines, row_to_string(row, widths))
 	end
 
-	return table.concat(lines, "\n")
+	return lines
 end
-
-print(pretty_print({ "age", "name" }, { { "bob", 10 }, { "sarah", 64 } }, 100))
 
 return pretty_print

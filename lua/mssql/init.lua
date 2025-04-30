@@ -67,7 +67,7 @@ local function enable_lsp(opts)
 	end
 
 	local handlers = get_handlers()
-	query.add_lsp_handlers(handlers, opts.max_rows)
+	query.add_lsp_handlers(handlers, opts)
 
 	vim.lsp.config["mssql_ls"] = {
 		cmd = {
@@ -111,6 +111,7 @@ local function setup_async(opts)
 		tools_file = nil,
 		connections_file = joinpath(data_dir, "connections.json"),
 		max_rows = 100,
+		max_column_width = 100,
 	}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 

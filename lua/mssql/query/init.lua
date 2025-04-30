@@ -1,4 +1,5 @@
 local utils = require("mssql.utils")
+local pretty_print = require("mssql.query.pretty_print")
 
 local function get_selected_text()
 	local mode = vim.api.nvim_get_mode().mode
@@ -18,13 +19,28 @@ local function get_selected_text()
 	return table.concat(lines, "\n")
 end
 
-local function show_result_set_async(column_info, subset_params)
+local function display_markdown(lines, buffer_name)
+	local bufnr = vim.api.nvim_create_buf(true, false)
+	vim.api.nvim_buf_set_name(bufnr, buffer_name)
+	vim.bo[bufnr].filetype = "markdown"
+	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+	vim.api.nvim_set_option_value("buftype", "nofile", { buf = bufnr })
+	vim.api.nvim_set_option_value("bufhidden", "hide", { buf = bufnr })
+	vim.api.nvim_set_option_value("swapfile", false, { buf = bufnr })
+	vim.api.nvim_set_option_value("readonly", true, { buf = bufnr })
+	vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
+	vim.api.nvim_set_current_buf(bufnr)
+end
+
+local function show_result_set_async(column_info, subset_params, max_width)
 	local column_headers = vim.iter(column_info)
 		:map(function(i)
 			return i.columnName
 		end)
 		:totable()
 	local client = utils.get_lsp_client(subset_params.ownerUri)
+
+	-- TODO: check for a row count of 0, no need to fetch subset
 
 	local result, err = utils.lsp_request_async(client, "query/subset", subset_params)
 	if err then
@@ -33,32 +49,24 @@ local function show_result_set_async(column_info, subset_params)
 		error("Error getting rows", 0)
 	end
 
-	print(vim.inspect())
+	local rows = vim.iter(result.resultSubset.rows)
+		:map(function(cells)
+			return vim.iter(cells)
+				:map(function(cell)
+					return cell.displayValue
+				end)
+				:totable()
+		end)
+		:totable()
 
-	-- TODO: test the print results, see where the result rows are and pretty print them
-
-	local bufnr = vim.api.nvim_create_buf(true, false)
-	vim.api.nvim_buf_set_name(
-		bufnr,
-		"results " -- .. subset_params.batchIndex + 1 .. "-" .. subset_params.resultSetIndex + 1 .. ".md"
+	local lines = pretty_print(column_headers, rows, max_width)
+	display_markdown(
+		lines,
+		"results " .. subset_params.batchIndex + 1 .. "-" .. subset_params.resultSetIndex + 1 .. ".md"
 	)
-
-	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {
-		"| name | age |",
-		"| ---- | --- |",
-		"| bob  | 64  |",
-		"| john | 65  |",
-	})
-	vim.api.nvim_set_option_value("buftype", "nofile", { buf = bufnr })
-	vim.api.nvim_set_option_value("bufhidden", "hide", { buf = bufnr })
-	vim.api.nvim_set_option_value("swapfile", false, { buf = bufnr })
-	vim.api.nvim_set_option_value("readonly", true, { buf = bufnr })
-	vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
-
-	vim.api.nvim_set_current_buf(bufnr)
 end
 
-local function query_complete_async(max_rows, err, result)
+local function query_complete_async(opts, err, result)
 	if err then
 		error("Could not execute query: " .. vim.inspect(err), 0)
 	elseif not (result or result.batchSummaries) then
@@ -73,8 +81,8 @@ local function query_complete_async(max_rows, err, result)
 					batchIndex = batch_index - 1,
 					resultSetIndex = result_set_index - 1,
 					rowsStartIndex = 0,
-					rowsCount = max_rows,
-				})
+					rowsCount = opts.max_rows,
+				}, opts.max_column_width)
 			end
 		end
 	end
@@ -101,10 +109,10 @@ return {
 		-- from here, the language server should send back some query/message evwnts then a final
 		-- query/complete event.
 	end,
-	add_lsp_handlers = function(handlers, max_rows)
+	add_lsp_handlers = function(handlers, opts)
 		handlers["query/complete"] = function(err, result)
 			utils.try_resume(coroutine.create(function()
-				query_complete_async(max_rows, err, result)
+				query_complete_async(opts, err, result)
 			end))
 		end
 		handlers["query/message"] = function(_, result)
