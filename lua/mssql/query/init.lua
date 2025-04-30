@@ -19,8 +19,11 @@ local function get_selected_text()
 	return table.concat(lines, "\n")
 end
 
+local result_buffers = {}
+
 local function display_markdown(lines, buffer_name)
 	local bufnr = vim.api.nvim_create_buf(true, false)
+	table.insert(result_buffers, bufnr)
 	vim.api.nvim_buf_set_name(bufnr, buffer_name)
 	vim.bo[bufnr].filetype = "markdown"
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
@@ -69,6 +72,13 @@ local function query_complete_async(opts, err, result)
 		error("Could not execute query: " .. vim.inspect(err), 0)
 	elseif not (result or result.batchSummaries) then
 		error("Could not execute query: no results returned" .. vim.inspect(err), 0)
+	end
+
+	-- delete existing result buffers
+	for _, result_buffer in ipairs(result_buffers) do
+		if vim.api.nvim_buf_is_valid(result_buffer) then
+			vim.api.nvim_buf_delete(result_buffer, { force = true })
+		end
 	end
 
 	for batch_index, batch_summary in ipairs(result.batchSummaries) do
