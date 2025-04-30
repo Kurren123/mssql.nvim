@@ -47,8 +47,8 @@ local try_resume =
 local get_lsp_client = function(owner_uri)
 	local bufnr
 	if owner_uri then
-		bufnr = vim.iter(ipairs(vim.api.nvim_list_bufs())):find(function(i, _)
-			return vim.uri_from_fname(vim.api.nvim_buf_get_name(i)) == owner_uri
+		bufnr = vim.iter(vim.api.nvim_list_bufs()):find(function(buf)
+			return vim.uri_from_fname(vim.api.nvim_buf_get_name(buf)) == owner_uri
 		end)
 		safe_assert(bufnr, "No buffer found with filename " .. owner_uri)
 	else

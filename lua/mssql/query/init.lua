@@ -40,8 +40,6 @@ local function show_result_set_async(column_info, subset_params, max_width)
 		:totable()
 	local client = utils.get_lsp_client(subset_params.ownerUri)
 
-	-- TODO: check for a row count of 0, no need to fetch subset
-
 	local result, err = utils.lsp_request_async(client, "query/subset", subset_params)
 	if err then
 		error("Error getting rows: " .. vim.inspect(err), 0)
@@ -76,13 +74,18 @@ local function query_complete_async(opts, err, result)
 	for batch_index, batch_summary in ipairs(result.batchSummaries) do
 		if batch_summary.resultSetSummaries then
 			for result_set_index, result_set_summary in ipairs(batch_summary.resultSetSummaries) do
-				show_result_set_async(result_set_summary.columnInfo, {
-					ownerUri = result.ownerUri,
-					batchIndex = batch_index - 1,
-					resultSetIndex = result_set_index - 1,
-					rowsStartIndex = 0,
-					rowsCount = opts.max_rows,
-				}, opts.max_column_width)
+				-- fetch and show all results at once
+				vim.schedule(function()
+					utils.try_resume(coroutine.create(function()
+						show_result_set_async(result_set_summary.columnInfo, {
+							ownerUri = result.ownerUri,
+							batchIndex = batch_index - 1,
+							resultSetIndex = result_set_index - 1,
+							rowsStartIndex = 0,
+							rowsCount = opts.max_rows,
+						}, opts.max_column_width)
+					end))
+				end)
 			end
 		end
 	end
