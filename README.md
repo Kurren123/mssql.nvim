@@ -15,13 +15,11 @@ An SQL Server plugin for neovim. **Not ready yet!** If you are looking for somet
 - [x] Cross database query autocomplete
 - [x] Refresh intellisense cache
 - [x] Disconnect
-- [ ] Execute queries (first 100 lines only)
-  - Each batch will open in a new buffer. Mark the buffer as a result buffer.
-  - Upon executing, delete all existing result buffers.
-- [ ] Key maps, docs, announce initial release
-- [ ] Execute queries with a configurable memory limit
-- [ ] Switch database
-- [ ] Auto format
+- [x] Execute queries
+- [x] New query, selecting a database
+- [ ] Key maps, docs
+- [ ] Use it for a while
+- [ ] Announce when happy
 
 ## Requirements
 
@@ -53,11 +51,11 @@ end)
 
 | Name               | Type      | Description                                                                                           | Default                                      |
 | ------------------ | --------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `max_rows`         | `int?`    | Max rows to return for queries. Needed so that large results don't crash neovim.                      | `100`                                        |
+| `max_column_width` | `int?`    | If a result row has a field text length larger than this it will be truncated when displayed          | `100`                                        |
 | `data_dir`         | `string?` | Directory to store download tools and internal config options                                         | `vim.fn.stdpath("data")`                     |
 | `tools_file`       | `string?` | Path to an existing [SQL tools service](https://github.com/microsoft/sqltoolsservice/releases) binary | `nil` (Binary auto downloaded to `data_dir`) |
 | `connections_file` | `string?` | Path to a json file containing connections (see below)                                                | `<data_dir>/connections.json`                |
-| `max_rows`         | `int?`    | Max rows to return for queries. Needed so that large results don't crash neovim.                      | `100`                                        |
-| `max_column_width` | int?      | If a result row has a field text length larger than this it will be truncated when displayed          | `100`                                        |
 
 ### Notes
 
@@ -73,6 +71,10 @@ mssql.edit_connections()
 
 -- Open a new buffer for sql queries
 mssql.new_query()
+
+-- Look for the connection called "default", prompt to choose a database in that server,
+-- connect to that database and open a new buffer for querying (very useful!)
+mssql.new_default_query()
 
 -- Connect the current buffer (you'll be prompted to choose a connection)
 mssql.connect()

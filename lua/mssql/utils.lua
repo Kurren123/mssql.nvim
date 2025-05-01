@@ -4,11 +4,12 @@ local function log(msg, level)
 	if type(msg) == "table" then
 		msg = vim.inspect(msg)
 	end
-	vim.notify(msg, level, {
-		id = "MSSQL",
-		title = "MSSQL",
-		plugin = "MSSQL",
-	})
+	vim.schedule(function()
+		vim.notify(msg, level, {
+			title = "MSSQL",
+			plugin = "MSSQL",
+		})
+	end)
 end
 
 ---Like assert, but doesn't prepend the
@@ -56,7 +57,7 @@ local get_lsp_client = function(owner_uri)
 	end
 
 	return safe_assert(
-		vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1],
+		vim.lsp.get_clients({ name = "mssql_ls", bufnr = bufnr })[1],
 		"No MSSQL lsp client attached. Create a new sql query or open an existing sql file"
 	)
 end
@@ -70,6 +71,53 @@ return {
 		end)
 		coroutine.yield()
 	end,
+	defer_async = function(ms)
+		local co = coroutine.running()
+		vim.defer_fn(function()
+			coroutine.resume(co)
+		end, ms)
+
+		coroutine.yield()
+	end,
+	---Waits for the lsp to call the given method, with optional timeout.
+	---Must be run inside a coroutine.
+	---@param method string
+	---@param timeout integer?
+	---@return any result
+	---@return lsp.ResponseError? error
+	wait_for_handler_async = function(method, timeout)
+		local this = coroutine.running()
+		local client = vim.lsp.get_clients({ name = "mssql_ls" })[1]
+		local resumed = false
+		if client then
+			local existing_handler = client.handlers[method]
+			client.handlers[method] = function(err, result, cfg)
+				if existing_handler then
+					vim.lsp.handlers[method] = existing_handler
+					existing_handler(err, result, cfg)
+				end
+				if not resumed then
+					resumed = true
+					try_resume(this, result, err)
+				end
+			end
+		end
+
+		timeout = timeout or 2000
+		vim.defer_fn(function()
+			if not resumed then
+				coroutine.resume(
+					this,
+					nil,
+					vim.lsp.rpc_response_error(
+						vim.lsp.protocol.ErrorCodes.UnknownErrorCode,
+						"Waiting for the lsp to call " .. method .. " timed out"
+					)
+				)
+			end
+		end, timeout)
+		return coroutine.yield()
+	end,
 	get_lsp_client = get_lsp_client,
 	---makes a request to the mssql lsp client
 	---@param client vim.lsp.Client
@@ -80,7 +128,7 @@ return {
 	lsp_request_async = function(client, method, params)
 		local this = coroutine.running()
 		client:request(method, params, function(err, result, _, _)
-			coroutine.resume(this, result, err)
+			try_resume(this, result, err)
 		end)
 		return coroutine.yield()
 	end,
@@ -88,16 +136,11 @@ return {
 	ui_select_async = function(items, opts)
 		local this = coroutine.running()
 		vim.ui.select(items, opts, function(selected)
-			if not selected then
-				log("No selection made", vim.log.levels.INFO)
-				return
-			end
 			vim.schedule(function()
 				try_resume(this, selected)
 			end)
 		end)
-		local result = coroutine.yield()
-		return result
+		return coroutine.yield()
 	end,
 	log_info = function(msg)
 		log(msg, vim.log.levels.INFO)
