@@ -42,6 +42,7 @@ local tests = {
 	-- Due to the internal timeout (see findings.md),
 	-- This test in inconsistent
 	-- require("tests.dbo_completion_spec"),
+	require("tests.execute_query_spec"),
 }
 
 coroutine.resume(coroutine.create(function()
