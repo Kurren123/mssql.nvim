@@ -16,10 +16,9 @@ An SQL Server plugin for neovim. **Not ready yet!** If you are looking for somet
 - [x] Refresh intellisense cache
 - [x] Disconnect
 - [x] Execute queries
-- [x] New query, selecting a database
-- [ ] Key maps, docs
-- [ ] Use it for a while
-- [ ] Announce when happy
+- [x] New default query
+- [x] Key maps
+- [ ] docs
 
 ## Requirements
 

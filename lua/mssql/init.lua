@@ -154,7 +154,7 @@ local function setup_async(opts)
 		connections_file = joinpath(data_dir, "connections.json"),
 		max_rows = 100,
 		max_column_width = 100,
-		prefix = nil,
+		keymap_prefix = nil,
 	}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 
@@ -345,9 +345,14 @@ local M = {
 
 	-- Rebuilds the intellisense cache
 	refresh_intellisense_cache = function()
-		local client = utils.get_lsp_client()
-		client:notify("textDocument/rebuildIntelliSense", { ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")) })
-		utils.log_info("Refreshing intellisense...")
+		local success, msg = pcall(function()
+			local client = utils.get_lsp_client()
+			client:notify("textDocument/rebuildIntelliSense", { ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")) })
+			utils.log_info("Refreshing intellisense...")
+		end)
+		if not success then
+			utils.log_error(msg)
+		end
 	end,
 
 	disconnect = function()
@@ -375,18 +380,31 @@ local M = {
 	end,
 }
 
-local function set_keymaps(prefix)
-	if not prefix then
+local function set_keymaps(opts)
+	if not (opts and opts.keymap_prefix) then
 		return
 	end
-	vim.keymap.set("n", prefix .. "n", M.new_query, { desc = "New Query" })
-	-- TODO: do the rest. Then check for whichkey
+	local prefix = opts.keymap_prefix
+
+	local keymaps = {
+		new_query = { suffix = "n", func = M.new_query, desc = "New Query" },
+		connect = { suffix = "c", func = M.connect, desc = "Connect" },
+		disconnect = { suffix = "q", func = M.disconnect, desc = "Disconnect" },
+		execute_query = { suffix = "x", func = M.execute_query, desc = "Execute Query" },
+		edit_connections = { suffix = "e", func = M.edit_connections, desc = "Edit Connections" },
+		refresh_intellisense = { suffix = "r", func = M.refresh_intellisense_cache, desc = "Refresh Intellisense" },
+		new_default_query = { suffix = "d", func = M.new_default_query, desc = "New Default Query" },
+	}
+
+	for _, m in pairs(keymaps) do
+		vim.keymap.set("n", prefix .. m.suffix, m.func, { desc = m.desc })
+	end
 end
 
 M.setup = function(opts, callback)
 	utils.try_resume(coroutine.create(function()
 		setup_async(opts)
-		set_keymaps(opts.prefix)
+		set_keymaps(opts)
 		if callback ~= nil then
 			callback()
 		end

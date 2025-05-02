@@ -16,4 +16,4 @@ vim.opt.rtp:prepend(get_plugin_root())
 vim.opt.swapfile = false
 vim.lsp.set_log_level("debug")
 
-require("mssql").setup()
+require("mssql").setup({ keymap_prefix = "<leader>d" })
