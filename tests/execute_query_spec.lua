@@ -9,8 +9,9 @@ return {
 		vim.api.nvim_buf_set_lines(0, 0, -1, false, { query })
 		utils.wait_for_schedule_async()
 		mssql.execute_query()
+		local client = vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1]
 
-		local _, err = test_utils.wait_for_handler("query/complete", 30000)
+		local _, err = test_utils.wait_for_handler(0, client, "query/complete", 30000)
 		if err then
 			error(err.message)
 		end

@@ -1,22 +1,84 @@
 local utils = require("mssql.utils")
-local pretty_print = require("mssql.query.pretty_print")
 
-local function get_selected_text()
-	local mode = vim.api.nvim_get_mode().mode
-	if not (mode == "v" or mode == "V" or mode == "\22") then -- \22 is Ctrl-V (visual block)
-		local content = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
-		return table.concat(content, "\n")
+local function truncate_values(table, limit)
+	for _, record in ipairs(table) do
+		for index, value in ipairs(record) do
+			local str = tostring(value)
+			if #str > limit then
+				str = str:sub(1, limit) .. "..."
+			end
+			record[index] = str
+		end
+	end
+end
+
+local function column_width(column_header, rows, column_index)
+	local row_max = vim.iter(rows)
+		:map(function(record)
+			return #record[column_index]
+		end)
+		:fold(0, math.max)
+
+	return math.max(#column_header, row_max)
+end
+
+local function column_widths(column_headers, rows)
+	if not column_headers then
+		return {}
 	end
 
-	-- exit visual mode so the marks are applied
-	local esc = vim.api.nvim_replace_termcodes("<esc>", true, false, true)
-	vim.api.nvim_feedkeys(esc, "x", false)
+	return vim.iter(ipairs(column_headers))
+		:map(function(column_index, column_header)
+			return column_width(column_header, rows, column_index)
+		end)
+		:totable()
+end
 
-	local start_pos = vim.fn.getpos("'<")
-	local end_pos = vim.fn.getpos("'>")
-	local lines = vim.fn.getregion(start_pos, end_pos, { mode = vim.fn.visualmode() })
+local function right_pad(str, len, char)
+	if #str >= len then
+		return str
+	end
+	return str .. string.rep(char, len - #str)
+end
 
-	return table.concat(lines, "\n")
+local function row_to_string(row, widths)
+	local padded_cells = vim.iter(ipairs(row))
+		:map(function(column_index, value)
+			return right_pad(value, widths[column_index], " ")
+		end)
+		:totable()
+	return "| " .. table.concat(padded_cells, " | ") .. " |"
+end
+
+local function header_divider(widths)
+	if not widths then
+		return ""
+	end
+
+	local dashes_row = vim.iter(widths)
+		:map(function(width)
+			return string.rep("-", width)
+		end)
+		:totable()
+	return row_to_string(dashes_row, widths)
+end
+
+local function pretty_print(column_headers, rows, max_width)
+	if not column_headers then
+		return ""
+	end
+
+	truncate_values(rows, max_width)
+
+	local widths = column_widths(column_headers, rows)
+	local divider = header_divider(widths)
+
+	local lines = { row_to_string(column_headers, widths), divider }
+	for _, row in ipairs(rows) do
+		table.insert(lines, row_to_string(row, widths))
+	end
+
+	return lines
 end
 
 local result_buffers = {}
@@ -67,13 +129,7 @@ local function show_result_set_async(column_info, subset_params, max_width)
 	)
 end
 
-local function query_complete_async(opts, err, result)
-	if err then
-		error("Could not execute query: " .. vim.inspect(err), 0)
-	elseif not (result or result.batchSummaries) then
-		error("Could not execute query: no results returned" .. vim.inspect(err), 0)
-	end
-
+local function display_query_results(opts, result)
 	-- delete existing result buffers
 	for _, result_buffer in ipairs(result_buffers) do
 		if vim.api.nvim_buf_is_valid(result_buffer) then
@@ -101,43 +157,4 @@ local function query_complete_async(opts, err, result)
 	end
 end
 
-return {
-	execute_async = function()
-		local client = utils.get_lsp_client()
-		local query = get_selected_text()
-		local result, err = utils.lsp_request_async(
-			client,
-			"query/executeString",
-			{ query = query, ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")) }
-		)
-
-		if err then
-			error("Error executing query: " .. err.message, 0)
-		elseif not result then
-			error("Could not execute query", 0)
-		else
-			utils.log_info("Executing...")
-		end
-
-		-- from here, the language server should send back some query/message evwnts then a final
-		-- query/complete event.
-	end,
-	add_lsp_handlers = function(handlers, opts)
-		handlers["query/complete"] = function(err, result)
-			utils.try_resume(coroutine.create(function()
-				query_complete_async(opts, err, result)
-			end))
-		end
-		handlers["query/message"] = function(_, result)
-			if not (result or result.message or result.message.message) then
-				return
-			end
-
-			if result.message.isError then
-				utils.log_error(result.message.message)
-			else
-				utils.log_info(result.message.message)
-			end
-		end
-	end,
-}
+return display_query_results

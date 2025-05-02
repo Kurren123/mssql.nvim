@@ -1,43 +1,5 @@
 local utils = require("mssql.utils")
 
----Waits for the lsp to call the given method, with optional timeout.
----Must be run inside a coroutine.
----@param client vim.lsp.Client
----@param bufnr integer
----@param method string
----@param timeout integer
----@return any result
----@return lsp.ResponseError? error
-local wait_for_handler_async = function(bufnr, client, method, timeout)
-	local this = coroutine.running()
-	local resumed = false
-	local existing_handler = client.handlers[method]
-	client.handlers[method] = function(err, result, cfg)
-		if existing_handler then
-			vim.lsp.handlers[method] = existing_handler
-			existing_handler(err, result, cfg)
-		end
-		if not resumed and cfg.bufnr == bufnr then
-			resumed = true
-			utils.try_resume(this, result, err)
-		end
-	end
-
-	vim.defer_fn(function()
-		if not resumed then
-			coroutine.resume(
-				this,
-				nil,
-				vim.lsp.rpc_response_error(
-					vim.lsp.protocol.ErrorCodes.UnknownErrorCode,
-					"Waiting for the lsp to call " .. method .. " timed out"
-				)
-			)
-		end
-	end, timeout)
-	return coroutine.yield()
-end
-
 local states = {
 	Disconnected = "disconnected",
 	Connecting = "connecting",
@@ -46,6 +8,7 @@ local states = {
 }
 return {
 	states = states,
+	-- creates a query manager, which
 	-- interacts with sql server while maintaining a state
 	create_query_manager = function(bufnr, client)
 		local state = states.Disconnected
@@ -67,7 +30,7 @@ return {
 					error("Could not connect: " .. err.message, 0)
 				end
 
-				result, err = wait_for_handler_async(bufnr, client, "connection/complete", 10000)
+				result, err = utils.wait_for_handler_async(bufnr, client, "connection/complete", 10000)
 				if err then
 					state = states.Disconnected
 					error("Error in connecting: " .. err.message, 0)
@@ -113,9 +76,19 @@ return {
 					utils.log_info("Executing...")
 				end
 
-				result, err = wait_for_handler_async(bufnr, client, "query/complete", 360000)
+				result, err = utils.wait_for_handler_async(bufnr, client, "query/complete", 360000)
 				state = states.Connected
-				return result, err
+
+				if err then
+					error("Could not execute query: " .. vim.inspect(err), 0)
+				elseif not (result or result.batchSummaries) then
+					error("Could not execute query: no results returned" .. vim.inspect(err), 0)
+				end
+				return result
+			end,
+
+			get_state = function()
+				return state
 			end,
 		}
 	end,

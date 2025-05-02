@@ -1,6 +1,7 @@
 local downloader = require("mssql.tools_downloader")
 local utils = require("mssql.utils")
-local query = require("mssql.query")
+local display_query_results = require("mssql.query.display_query_results")
+local query_manager_module = require("mssql.query_manager")
 
 local joinpath = vim.fs.joinpath
 
@@ -32,51 +33,46 @@ local function write_json_file(path, table)
 	end
 end
 
-local get_handlers = function()
-	return {
-		["connection/complete"] = function(_, result)
-			if result.errorMessage then
-				utils.log_error("Could not connect: " .. result.errorMessage)
-				return result,
-					vim.lsp.rpc.rpc_response_error(
-						vim.lsp.protocol.ErrorCodes.UnknownErrorCode,
-						result.errorMessage,
-						nil
-					)
-			else
-				utils.log_info("Connected")
-				return result, nil
-			end
-		end,
-
-		["textDocument/intelliSenseReady"] = function(err, result)
-			if err then
-				utils.log_error("Could not start intellisense: " .. vim.inspect(err))
-			else
-				utils.log_info("Intellisense ready")
-			end
-			return result, err
-		end,
-	}
-end
-
+local lsp_name = "mssql_ls"
 local function enable_lsp(opts)
 	local default_path = joinpath(opts.data_dir, "sqltools/MicrosoftSqlToolsServiceLayer")
 	if jit.os == "Windows" then
 		default_path = default_path .. ".exe"
 	end
 
-	local handlers = get_handlers()
-	query.add_lsp_handlers(handlers, opts)
-
-	vim.lsp.config["mssql_ls"] = {
+	vim.lsp.config[lsp_name] = {
 		cmd = {
 			opts.tools_file or default_path,
 			"--enable-connection-pooling",
 			"--enable-sql-authentication-provider",
 		},
 		filetypes = { "sql" },
-		handlers = handlers,
+		handlers = {
+			["textDocument/intelliSenseReady"] = function(err, result)
+				if err then
+					utils.log_error("Could not start intellisense: " .. vim.inspect(err))
+				else
+					utils.log_info("Intellisense ready")
+				end
+				return result, err
+			end,
+			["query/message"] = function(_, result)
+				if not (result or result.message or result.message.message) then
+					return
+				end
+
+				if result.message.isError then
+					utils.log_error(result.message.message)
+				else
+					utils.log_info(result.message.message)
+				end
+			end,
+		},
+		on_attach = function(client, bufnr)
+			if not vim.b[bufnr].query_manager then
+				vim.b[bufnr].query_manager = query_manager_module.create_query_manager(bufnr, client)
+			end
+		end,
 	}
 
 	vim.lsp.enable("mssql_ls")
@@ -178,9 +174,7 @@ local function get_connections(opts)
 	return json
 end
 
-local connect_async = function(opts)
-	-- Check for an lsp client before prompting the user for connection
-	local client = utils.get_lsp_client()
+local connect_async = function(opts, query_manager)
 	local json = get_connections(opts)
 	if not json then
 		edit_connections(opts)
@@ -194,19 +188,15 @@ local connect_async = function(opts)
 	end
 
 	local connectParams = {
-		ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")),
 		connection = {
 			options = json[con],
 		},
 	}
 
-	local _, err = utils.lsp_request_async(client, "connection/connect", connectParams)
-	if err then
-		error("Could not connect: " .. err.message, 0)
-	end
+	query_manager.connect_async(connectParams)
 end
 
-local function new_query()
+local function new_query_async()
 	-- The langauge server requires all files to have a file name.
 	-- Vscode names new files "untitled-1" etc so we'll do the same
 	vim.cmd("enew")
@@ -214,6 +204,9 @@ local function new_query()
 	vim.cmd("file untitled-" .. buf .. ".sql")
 	vim.cmd("setfiletype sql")
 	vim.b[buf].is_temp_name = true
+
+	local client = utils.wait_for_on_attach_async(lsp_name, buf, 10000)
+	return buf, client
 end
 
 local function new_default_query_async(opts)
@@ -227,38 +220,25 @@ local function new_default_query_async(opts)
 	end
 	local connection = connections.default
 
-	new_query()
-
-	-- poll for client
-	local client
-	for _ = 1, 20 do
-		utils.defer_async(100)
-		client = vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1]
-		if client then
-			break
-		end
+	local buf, client = new_query_async()
+	local query_manager = vim.b[buf].query_manager
+	if not query_manager then
+		error("CRITICAL: Lsp attached without query manager")
 	end
-	if not client then
-		error("No lsp is attaching", 0)
-	end
-
-	local ownerUri = vim.uri_from_fname(vim.fn.expand("%:p"))
 
 	local connectParams = {
-		ownerUri = ownerUri,
 		connection = {
 			options = connection,
 		},
 	}
-	local result, err
-	_, err = utils.lsp_request_async(client, "connection/connect", connectParams)
-	if err then
-		error("Could not connect: " .. err.message, 0)
-	end
 
-	utils.wait_for_handler_async("connection/complete", 3000)
+	query_manager.connect_async(connectParams)
 
-	result, err = utils.lsp_request_async(client, "connection/listdatabases", { ownerUri = ownerUri })
+	local result, err = utils.lsp_request_async(
+		client,
+		"connection/listdatabases",
+		{ ownerUri = vim.uri_from_fname(vim.api.nvim_buf_get_name(buf)) }
+	)
 
 	if err then
 		error("Error listing databases: " .. err.message, 0)
@@ -273,35 +253,15 @@ local function new_default_query_async(opts)
 	end
 
 	-- disconnect, change the database and connect again
-	utils.lsp_request_async(client, "connection/disconnect", { ownerUri = ownerUri })
+	query_manager.disconnect_async()
 
 	connection.database = db
 	connectParams = {
-		ownerUri = ownerUri,
 		connection = {
 			options = connection,
 		},
 	}
-	_, err = utils.lsp_request_async(client, "connection/connect", connectParams)
-	if err then
-		error("Could not connect: " .. err.message, 0)
-	end
-end
-
-local disconnect_async = function()
-	local client = utils.get_lsp_client()
-	local result, err = utils.lsp_request_async(
-		client,
-		"connection/disconnect",
-		{ ownerUri = vim.uri_from_fname(vim.fn.expand("%:p")) }
-	)
-	if err then
-		error("Error disconnecting: " .. err.message, 0)
-	elseif not result then
-		error("Could not disconnect", 0)
-	else
-		utils.log_info("Disconnected")
-	end
+	query_manager.connect_async(connectParams)
 end
 
 return {
@@ -313,7 +273,11 @@ return {
 			end
 		end))
 	end,
-	new_query = new_query,
+	new_query = function()
+		utils.try_resume(coroutine.create(function()
+			new_query_async()
+		end))
+	end,
 
 	-- Look for the connection called "default", prompt to choose a database in that server,
 	-- connect to that database and open a new buffer for querying (very useful!)
@@ -325,8 +289,13 @@ return {
 
 	-- Connect the current buffer (you'll be prompted to choose a connection)
 	connect = function()
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
+			return
+		end
 		utils.try_resume(coroutine.create(function()
-			connect_async(plugin_opts)
+			connect_async(plugin_opts, query_manager)
 		end))
 	end,
 
@@ -342,14 +311,26 @@ return {
 	end,
 
 	disconnect = function()
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
+			return
+		end
 		utils.try_resume(coroutine.create(function()
-			disconnect_async()
+			query_manager.disconnect_async()
 		end))
 	end,
 
 	execute_query = function()
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
+			return
+		end
 		utils.try_resume(coroutine.create(function()
-			query.execute_async()
+			local query = utils.get_selected_text()
+			local result = query_manager.execute_async(query)
+			display_query_results(plugin_opts, result)
 		end))
 	end,
 }

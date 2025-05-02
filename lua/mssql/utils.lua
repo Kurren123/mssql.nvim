@@ -81,32 +81,33 @@ return {
 	end,
 	---Waits for the lsp to call the given method, with optional timeout.
 	---Must be run inside a coroutine.
+	---@param client vim.lsp.Client
+	---@param bufnr integer
 	---@param method string
-	---@param timeout integer?
+	---@param timeout integer
 	---@return any result
 	---@return lsp.ResponseError? error
-	wait_for_handler_async = function(method, timeout)
+	wait_for_handler_async = function(bufnr, client, method, timeout)
 		local this = coroutine.running()
-		local client = vim.lsp.get_clients({ name = "mssql_ls" })[1]
 		local resumed = false
-		if client then
-			local existing_handler = client.handlers[method]
-			client.handlers[method] = function(err, result, cfg)
-				if existing_handler then
-					vim.lsp.handlers[method] = existing_handler
-					existing_handler(err, result, cfg)
-				end
-				if not resumed then
-					resumed = true
-					try_resume(this, result, err)
-				end
+		local existing_handler = client.handlers[method]
+		client.handlers[method] = function(err, result, cfg)
+			if existing_handler then
+				existing_handler(err, result, cfg)
 			end
+			if not resumed and cfg.bufnr == bufnr then
+				resumed = true
+				vim.lsp.handlers[method] = existing_handler
+				try_resume(this, result, err)
+			end
+			return result, err
 		end
 
-		timeout = timeout or 2000
 		vim.defer_fn(function()
 			if not resumed then
-				coroutine.resume(
+				resumed = true
+				vim.lsp.handlers[method] = existing_handler
+				try_resume(
 					this,
 					nil,
 					vim.lsp.rpc_response_error(
@@ -116,6 +117,37 @@ return {
 				)
 			end
 		end, timeout)
+		return coroutine.yield()
+	end,
+	---Waits for the lsp attach to the given buffer, with optional timeout.
+	---Must be run inside a coroutine.
+	---@param lsp_name string
+	---@param bufnr_to_watch integer
+	---@param timeout integer
+	---@return vim.lsp.Client
+	wait_for_on_attach_async = function(lsp_name, bufnr_to_watch, timeout)
+		local this = coroutine.running()
+		local resumed = false
+		local existing_handler = vim.lsp.config[lsp_name].on_attach
+		vim.lsp.config[lsp_name].on_attach = function(client, bufnr)
+			if existing_handler then
+				existing_handler(client, bufnr)
+			end
+			if not resumed and bufnr == bufnr_to_watch then
+				resumed = true
+				vim.lsp.config[lsp_name].on_attach = existing_handler
+				try_resume(this, client)
+			end
+		end
+
+		vim.defer_fn(function()
+			if not resumed then
+				resumed = true
+				vim.lsp.config[lsp_name].on_attach = existing_handler
+				log("Waiting for the lsp to attach to buffer " .. bufnr_to_watch .. " timed out", vim.log.levels.ERROR)
+			end
+		end, timeout)
+
 		return coroutine.yield()
 	end,
 	get_lsp_client = get_lsp_client,
@@ -149,4 +181,22 @@ return {
 		log(msg, vim.log.levels.ERROR)
 	end,
 	safe_assert = safe_assert,
+
+	get_selected_text = function()
+		local mode = vim.api.nvim_get_mode().mode
+		if not (mode == "v" or mode == "V" or mode == "\22") then -- \22 is Ctrl-V (visual block)
+			local content = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
+			return table.concat(content, "\n")
+		end
+
+		-- exit visual mode so the marks are applied
+		local esc = vim.api.nvim_replace_termcodes("<esc>", true, false, true)
+		vim.api.nvim_feedkeys(esc, "x", false)
+
+		local start_pos = vim.fn.getpos("'<")
+		local end_pos = vim.fn.getpos("'>")
+		local lines = vim.fn.getregion(start_pos, end_pos, { mode = vim.fn.visualmode() })
+
+		return table.concat(lines, "\n")
+	end,
 }
