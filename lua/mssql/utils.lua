@@ -87,15 +87,16 @@ return {
 	---@param timeout integer
 	---@return any result
 	---@return lsp.ResponseError? error
-	wait_for_handler_async = function(bufnr, client, method, timeout)
+	wait_for_notification_async = function(bufnr, client, method, timeout)
+		local owner_uri = vim.uri_from_fname(vim.api.nvim_buf_get_name(bufnr))
 		local this = coroutine.running()
 		local resumed = false
 		local existing_handler = client.handlers[method]
-		client.handlers[method] = function(err, result, cfg)
+		client.handlers[method] = function(err, result, ctx)
 			if existing_handler then
-				existing_handler(err, result, cfg)
+				existing_handler(err, result, ctx)
 			end
-			if not resumed and cfg.bufnr == bufnr then
+			if not resumed and result and result.ownerUri == owner_uri then
 				resumed = true
 				vim.lsp.handlers[method] = existing_handler
 				try_resume(this, result, err)
@@ -112,7 +113,7 @@ return {
 					nil,
 					vim.lsp.rpc_response_error(
 						vim.lsp.protocol.ErrorCodes.UnknownErrorCode,
-						"Waiting for the lsp to call " .. method .. " timed out"
+						"Waiting for the lsp to call " .. method .. " timed out for buffer " .. bufnr
 					)
 				)
 			end
@@ -126,6 +127,12 @@ return {
 	---@param timeout integer
 	---@return vim.lsp.Client
 	wait_for_on_attach_async = function(lsp_name, bufnr_to_watch, timeout)
+		-- if it's already attach, return
+		local client = vim.lsp.get_clients({ name = lsp_name, bufnr = bufnr_to_watch })[1]
+		if client then
+			return client
+		end
+
 		local this = coroutine.running()
 		local resumed = false
 		local existing_handler = vim.lsp.config[lsp_name].on_attach

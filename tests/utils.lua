@@ -28,6 +28,4 @@ return {
 			end, 3000)
 		end
 	end,
-
-	wait_for_handler = utils.wait_for_handler_async,
 }

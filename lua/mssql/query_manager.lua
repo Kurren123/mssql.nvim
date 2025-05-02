@@ -30,7 +30,7 @@ return {
 					error("Could not connect: " .. err.message, 0)
 				end
 
-				result, err = utils.wait_for_handler_async(bufnr, client, "connection/complete", 10000)
+				result, err = utils.wait_for_notification_async(bufnr, client, "connection/complete", 10000)
 				if err then
 					state = states.Disconnected
 					error("Error in connecting: " .. err.message, 0)
@@ -76,7 +76,7 @@ return {
 					utils.log_info("Executing...")
 				end
 
-				result, err = utils.wait_for_handler_async(bufnr, client, "query/complete", 360000)
+				result, err = utils.wait_for_notification_async(bufnr, client, "query/complete", 360000)
 				state = states.Connected
 
 				if err then

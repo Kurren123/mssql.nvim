@@ -1,6 +1,6 @@
 local downloader = require("mssql.tools_downloader")
 local utils = require("mssql.utils")
-local display_query_results = require("mssql.query.display_query_results")
+local display_query_results = require("mssql.display_query_results")
 local query_manager_module = require("mssql.query_manager")
 
 local joinpath = vim.fs.joinpath
