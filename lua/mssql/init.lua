@@ -154,6 +154,7 @@ local function setup_async(opts)
 		connections_file = joinpath(data_dir, "connections.json"),
 		max_rows = 100,
 		max_column_width = 100,
+		prefix = nil,
 	}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 
@@ -181,6 +182,7 @@ local function setup_async(opts)
 
 	enable_lsp(opts)
 	set_auto_commands()
+
 	plugin_opts = opts
 end
 
@@ -310,15 +312,7 @@ local function new_default_query_async(opts)
 	query_manager.connect_async(connectParams)
 end
 
-return {
-	setup = function(opts, callback)
-		utils.try_resume(coroutine.create(function()
-			setup_async(opts)
-			if callback ~= nil then
-				callback()
-			end
-		end))
-	end,
+local M = {
 	new_query = function()
 		utils.try_resume(coroutine.create(function()
 			new_query_async()
@@ -380,3 +374,23 @@ return {
 		end))
 	end,
 }
+
+local function set_keymaps(prefix)
+	if not prefix then
+		return
+	end
+	vim.keymap.set("n", prefix .. "n", M.new_query, { desc = "New Query" })
+	-- TODO: do the rest. Then check for whichkey
+end
+
+M.setup = function(opts, callback)
+	utils.try_resume(coroutine.create(function()
+		setup_async(opts)
+		set_keymaps(opts.prefix)
+		if callback ~= nil then
+			callback()
+		end
+	end))
+end
+
+return M
