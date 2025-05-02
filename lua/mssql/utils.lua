@@ -120,43 +120,6 @@ return {
 		end, timeout)
 		return coroutine.yield()
 	end,
-	---Waits for the lsp attach to the given buffer, with optional timeout.
-	---Must be run inside a coroutine.
-	---@param lsp_name string
-	---@param bufnr_to_watch integer
-	---@param timeout integer
-	---@return vim.lsp.Client
-	wait_for_on_attach_async = function(lsp_name, bufnr_to_watch, timeout)
-		-- if it's already attach, return
-		local client = vim.lsp.get_clients({ name = lsp_name, bufnr = bufnr_to_watch })[1]
-		if client then
-			return client
-		end
-
-		local this = coroutine.running()
-		local resumed = false
-		local existing_handler = vim.lsp.config[lsp_name].on_attach
-		vim.lsp.config[lsp_name].on_attach = function(client, bufnr)
-			if existing_handler then
-				existing_handler(client, bufnr)
-			end
-			if not resumed and bufnr == bufnr_to_watch then
-				resumed = true
-				vim.lsp.config[lsp_name].on_attach = existing_handler
-				try_resume(this, client)
-			end
-		end
-
-		vim.defer_fn(function()
-			if not resumed then
-				resumed = true
-				vim.lsp.config[lsp_name].on_attach = existing_handler
-				log("Waiting for the lsp to attach to buffer " .. bufnr_to_watch .. " timed out", vim.log.levels.ERROR)
-			end
-		end, timeout)
-
-		return coroutine.yield()
-	end,
 	get_lsp_client = get_lsp_client,
 	---makes a request to the mssql lsp client
 	---@param client vim.lsp.Client

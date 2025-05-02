@@ -72,10 +72,56 @@ local function enable_lsp(opts)
 			if not vim.b[bufnr].query_manager then
 				vim.b[bufnr].query_manager = query_manager_module.create_query_manager(bufnr, client)
 			end
+
+			-- see the wait_for_on_attach_async function below
+			if vim.b[bufnr].on_attach_handlers then
+				for _, handler in ipairs(vim.b[bufnr].on_attach_handlers) do
+					handler(client)
+				end
+				vim.b[bufnr].on_attach_handlers = {}
+			end
 		end,
 	}
 
 	vim.lsp.enable("mssql_ls")
+end
+
+---Waits for the lsp attach to the given buffer, with optional timeout.
+---Must be run inside a coroutine.
+---@param bufnr_to_watch integer
+---@param timeout integer
+---@return vim.lsp.Client
+local function wait_for_on_attach_async(bufnr_to_watch, timeout)
+	-- if it's already attach, return
+	local existing_client = vim.lsp.get_clients({ name = lsp_name, bufnr = bufnr_to_watch })[1]
+	if existing_client then
+		return existing_client
+	end
+
+	local this = coroutine.running()
+	local resumed = false
+
+	local on_attach_handler = function(client)
+		if not resumed then
+			resumed = true
+			utils.try_resume(this, client)
+		end
+	end
+
+	if not vim.b[bufnr_to_watch].on_attach_handlers then
+		vim.b[bufnr_to_watch].on_attach_handlers = { on_attach_handler }
+	else
+		table.insert(vim.b[bufnr_to_watch].on_attach_handlers, on_attach_handler)
+	end
+
+	vim.defer_fn(function()
+		if not resumed then
+			resumed = true
+			utils.log_error("Waiting for the lsp to attach to buffer " .. bufnr_to_watch .. " timed out")
+		end
+	end, timeout)
+
+	return coroutine.yield()
 end
 
 local function set_auto_commands()
@@ -205,7 +251,7 @@ local function new_query_async()
 	vim.cmd("setfiletype sql")
 	vim.b[buf].is_temp_name = true
 
-	local client = utils.wait_for_on_attach_async(lsp_name, buf, 10000)
+	local client = wait_for_on_attach_async(buf, 10000)
 	return buf, client
 end
 
