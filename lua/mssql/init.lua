@@ -40,6 +40,9 @@ local function enable_lsp(opts)
 		default_path = default_path .. ".exe"
 	end
 
+	-- sometimes two of these come at once, so hide for 1s
+	local hide_intellisense_ready = false
+
 	vim.lsp.config[lsp_name] = {
 		cmd = {
 			opts.tools_file or default_path,
@@ -52,7 +55,13 @@ local function enable_lsp(opts)
 				if err then
 					utils.log_error("Could not start intellisense: " .. vim.inspect(err))
 				else
-					utils.log_info("Intellisense ready")
+					if not hide_intellisense_ready then
+						hide_intellisense_ready = true
+						utils.log_info("Intellisense ready")
+						vim.defer_fn(function()
+							hide_intellisense_ready = false
+						end, 1000)
+					end
 				end
 				return result, err
 			end,
@@ -242,6 +251,7 @@ local connect_async = function(opts, query_manager)
 	}
 
 	query_manager.connect_async(connectParams)
+	utils.log_info("Connected")
 end
 
 local function new_query_async()
@@ -310,6 +320,7 @@ local function new_default_query_async(opts)
 		},
 	}
 	query_manager.connect_async(connectParams)
+	utils.log_info("Connected")
 end
 
 local M = {
