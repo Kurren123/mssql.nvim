@@ -387,13 +387,28 @@ local function set_keymaps(opts)
 	local prefix = opts.keymap_prefix
 
 	local keymaps = {
-		new_query = { "n", M.new_query, desc = "New Query" },
-		connect = { "c", M.connect, desc = "Connect" },
-		disconnect = { "q", M.disconnect, desc = "Disconnect" },
-		execute_query = { "x", M.execute_query, desc = "Execute Query" },
-		edit_connections = { "e", M.edit_connections, desc = "Edit Connections" },
-		refresh_intellisense = { "r", M.refresh_intellisense_cache, desc = "Refresh Intellisense" },
-		new_default_query = { "d", M.new_default_query, desc = "New Default Query" },
+		new_query = { "n", M.new_query, desc = "New Query", icon = { icon = "", color = "yellow" } },
+		connect = { "c", M.connect, desc = "Connect", icon = { icon = "󱘖", color = "green" } },
+		disconnect = { "q", M.disconnect, desc = "Disconnect", icon = { icon = "", color = "red" } },
+		execute_query = { "x", M.execute_query, desc = "Execute Query", icon = { icon = "", color = "green" } },
+		edit_connections = {
+			"e",
+			M.edit_connections,
+			desc = "Edit Connections",
+			icon = { icon = "󰅩", color = "grey" },
+		},
+		refresh_intellisense = {
+			"r",
+			M.refresh_intellisense_cache,
+			desc = "Refresh Intellisense",
+			icon = { icon = "", color = "grey" },
+		},
+		new_default_query = {
+			"d",
+			M.new_default_query,
+			desc = "New Default Query",
+			icon = { icon = "", color = "yellow" },
+		},
 	}
 
 	local success, wk = pcall(require, "which-key")
@@ -402,6 +417,7 @@ local function set_keymaps(opts)
 			{
 				prefix,
 				group = "mssql",
+				icon = { icon = "", color = "yellow" },
 				expand = function()
 					local qm = vim.b.query_manager
 					if not qm then
