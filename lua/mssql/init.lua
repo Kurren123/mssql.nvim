@@ -387,17 +387,64 @@ local function set_keymaps(opts)
 	local prefix = opts.keymap_prefix
 
 	local keymaps = {
-		new_query = { suffix = "n", func = M.new_query, desc = "New Query" },
-		connect = { suffix = "c", func = M.connect, desc = "Connect" },
-		disconnect = { suffix = "q", func = M.disconnect, desc = "Disconnect" },
-		execute_query = { suffix = "x", func = M.execute_query, desc = "Execute Query" },
-		edit_connections = { suffix = "e", func = M.edit_connections, desc = "Edit Connections" },
-		refresh_intellisense = { suffix = "r", func = M.refresh_intellisense_cache, desc = "Refresh Intellisense" },
-		new_default_query = { suffix = "d", func = M.new_default_query, desc = "New Default Query" },
+		new_query = { "n", M.new_query, desc = "New Query" },
+		connect = { "c", M.connect, desc = "Connect" },
+		disconnect = { "q", M.disconnect, desc = "Disconnect" },
+		execute_query = { "x", M.execute_query, desc = "Execute Query" },
+		edit_connections = { "e", M.edit_connections, desc = "Edit Connections" },
+		refresh_intellisense = { "r", M.refresh_intellisense_cache, desc = "Refresh Intellisense" },
+		new_default_query = { "d", M.new_default_query, desc = "New Default Query" },
 	}
 
-	for _, m in pairs(keymaps) do
-		vim.keymap.set("n", prefix .. m.suffix, m.func, { desc = m.desc })
+	local success, wk = pcall(require, "which-key")
+	if success then
+		wk.add({
+			{
+				prefix,
+				group = "mssql",
+				expand = function()
+					local qm = vim.b.query_manager
+					if not qm then
+						return { keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
+					end
+
+					local state = qm.get_state()
+					local states = query_manager_module.states
+					if state == states.Connecting or state == states.Executing then
+						return {
+							keymaps.new_query,
+							keymaps.new_default_query,
+							keymaps.edit_connections,
+							keymaps.refresh_intellisense,
+						}
+					elseif state == states.Connected then
+						return {
+							keymaps.new_query,
+							keymaps.new_default_query,
+							keymaps.edit_connections,
+							keymaps.refresh_intellisense,
+							keymaps.execute_query,
+							keymaps.disconnect,
+						}
+					elseif state == states.Disconnected then
+						return {
+							keymaps.new_query,
+							keymaps.new_default_query,
+							keymaps.edit_connections,
+							keymaps.refresh_intellisense,
+							keymaps.connect,
+						}
+					else
+						utils.log_error("Entered unrecognised query state: " .. state)
+						return {}
+					end
+				end,
+			},
+		})
+	else
+		for _, m in pairs(keymaps) do
+			vim.keymap.set("n", prefix .. m[1], m[2], { desc = m.desc })
+		end
 	end
 end
 
