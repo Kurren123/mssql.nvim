@@ -8,15 +8,15 @@ An SQL Server plugin for neovim. Like it? Give a ⭐️!
 
 Completions, including TSQL keywords,
 
-![Tsql keywords screenshot](./docs/screenshots/Tsql_completion.png)
+<img src="./docs/screenshots/Tsql_completion.png" alt="Tsql keywords screenshot" width="300"/>
 
 stored procedures
 
-![stored procedures screenshot](./docs/screenshots/Stored_procedure_completion.png)
+<img src="./docs/screenshots/Stored_procedure_completion.png" alt="stored procedures screenshot" width="300"/>
 
 and cross database queries
 
-![cross database queries screenshot](./docs/screenshots/Cross_db_completion.png)
+<img src="./docs/screenshots/Cross_db_completion.png" alt="Cross db completion" width="300"/>
 
 Execute queries, with results in markdown tables for autoamtic colouring and
 rendering
@@ -26,7 +26,7 @@ rendering
 Optional which-key integration, showing only the key bindings which are possible
 (eg don't show `Connect` if we are already connected)
 
-![Which key screenshot](./docs/screenshots/Which-key.png)
+<img src="./docs/screenshots/Which-key.png" alt="Which key screenshot" width="300"/>
 
 ## Requirements
 
