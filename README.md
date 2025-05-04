@@ -21,12 +21,12 @@ and cross database queries
 Execute queries, with results in markdown tables for autoamtic colouring and
 rendering
 
-[results screenshot](./docs/screenshots/Results.png)
+![results screenshot](./docs/screenshots/Results.png)
 
 Optional which-key integration, showing only the key bindings which are possible
 (eg don't show `Connect` if we are already connected)
 
-[Which key screenshot](./docs/screenshots/Which-key.png)
+![Which key screenshot](./docs/screenshots/Which-key.png)
 
 ## Requirements
 
