@@ -389,13 +389,20 @@ local M = {
 			display_query_results(plugin_opts, result)
 		end))
 	end,
+	setup = function(opts, callback)
+		utils.try_resume(coroutine.create(function()
+			setup_async(opts)
+			if callback ~= nil then
+				callback()
+			end
+		end))
+	end,
 }
 
-local function set_keymaps(opts)
-	if not (opts and opts.keymap_prefix) then
+M.set_keymaps = function(prefix)
+	if not prefix then
 		return
 	end
-	local prefix = opts.keymap_prefix
 
 	local keymaps = {
 		new_query = { "n", M.new_query, desc = "New Query", icon = { icon = "", color = "yellow" } },
@@ -473,16 +480,6 @@ local function set_keymaps(opts)
 			vim.keymap.set("n", prefix .. m[1], m[2], { desc = m.desc })
 		end
 	end
-end
-
-M.setup = function(opts, callback)
-	utils.try_resume(coroutine.create(function()
-		setup_async(opts)
-		set_keymaps(opts)
-		if callback ~= nil then
-			callback()
-		end
-	end))
 end
 
 return M
