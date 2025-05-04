@@ -2,24 +2,31 @@
 
 # mssql.nvim
 
-An SQL Server plugin for neovim. **Not ready yet!** If you are looking for
-something usable, come back later.
+An SQL Server plugin for neovim. Like it? Give a ⭐️!
 
-## To do
+## Features
 
-- [x] Download and extract the sql tools
-- [x] Basic LSP configuration
-- [x] Basic (disconected) auto complete for saved sql files
-- [x] Auto complete for new queries (unsaved buffer)
-- [x] Connect to a database
-- [x] Have auto complete include database objects
-- [x] Cross database query autocomplete
-- [x] Refresh intellisense cache
-- [x] Disconnect
-- [x] Execute queries
-- [x] New default query
-- [x] Key maps
-- [ ] docs
+Completions, including TSQL keywords,
+
+![Tsql keywords screenshot](./docs/screenshots/Tsql_completion.png)
+
+stored procedures
+
+![stored procedures screenshot](./docs/screenshots/Stored_procedure_completion.png)
+
+and cross database queries
+
+![cross database queries screenshot](./docs/screenshots/Cross_db_completion.png)
+
+Execute queries, with results in markdown tables for autoamtic colouring and
+rendering
+
+[results screenshot](./docs/screenshots/Results.png)
+
+Optional which-key integration, showing only the key bindings which are possible
+(eg don't show `Connect` if we are already connected)
+
+[Which key screenshot](./docs/screenshots/Which-key.png)
 
 ## Requirements
 
