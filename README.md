@@ -34,18 +34,68 @@ Optional which-key integration, showing only the key bindings which are possible
 
 <img src="./docs/screenshots/Which-key.png" alt="Which key screenshot" width="300"/>
 
-## Requirements
+## Installation
 
-- Neovim v0.11.0 or later
+Requires Neovim v0.11.0 or later.
+
+<details>
+<summary>lazy.nvim</summary>
+
+```lua
+{
+  "Kurren123/mssql.nvim",
+  opts = {},
+  -- optional. You also need to call set_keymaps (see below)
+  dependencies = { "folke/which-key.nvim" }
+}
+```
+
+</details>
+
+<details>
+<summary>Packer</summary>
+
+```lua
+require("packer").startup(function()
+  use({
+    "Kurren123/mssql.nvim",
+    -- optional. You also need to call set_keymaps (see below)
+    requires = { 'folke/which-key.nvim' },
+    config = function()
+      require("mssql").setup()
+    end,
+  })
+end)
+```
+
+</details>
+
+<details>
+<summary>Paq</summary>
+
+```lua
+require("paq")({
+  { "stevearc/conform.nvim" },
+  -- optional. You also need to call set_keymaps (see below)
+  { "folke/which-key.nvim" }
+})
+```
+
+</details>
 
 ## Setup
 
-```lua
--- Basic setup
-require("mssql.nvim").setup()
-require("mssql.nvim").set_keymaps("<leader>d")
+Basic setup
 
--- With options (see below)
+```lua
+require("mssql.nvim").setup()
+-- then in your keymaps file:
+require("mssql.nvim").set_keymaps("<leader>d")
+```
+
+With options (see below)
+
+```lua
 require("mssql.nvim").setup({
   max_rows = 50,
   max_column_width = 50,
