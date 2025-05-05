@@ -86,9 +86,9 @@ require("paq")({
 ## Setup
 
 ```lua
-require("mssql.nvim").setup()
+require("mssql").setup()
 -- then in your keymaps file with a prefix of your choice:
-require("mssql.nvim").set_keymaps("<leader>d")
+require("mssql").set_keymaps("<leader>d")
 ```
 
 Pass in a prefix to `set_keymaps` to have all keymaps set up with that prefix
@@ -142,13 +142,13 @@ The format is `"connection name": connection object`. Eg:
 Setup with options:
 
 ```lua
-require("mssql.nvim").setup({
+require("mssql").setup({
   max_rows = 50,
   max_column_width = 50,
 })
 
 -- With callback
-require("mssql.nvim").setup({
+require("mssql").setup({
   max_rows = 50,
   max_column_width = 50,
 }, function()
