@@ -29,8 +29,8 @@ rendering
 
 ![results screenshot](./docs/screenshots/Results.png)
 
-Optional which-key integration, showing only the key bindings which are possible
-(eg don't show `Connect` if we are already connected)
+Optional which-key integration, showing only the key maps which are possible (eg
+don't show `Connect` if we are already connected)
 
 <img src="./docs/screenshots/Which-key.png" alt="Which key screenshot" width="300"/>
 
@@ -89,11 +89,11 @@ Basic setup
 
 ```lua
 require("mssql.nvim").setup()
--- then in your keymaps file:
+-- then in your keymaps file with a prefix of your choice:
 require("mssql.nvim").set_keymaps("<leader>d")
 ```
 
-With options (see below)
+With options
 
 ```lua
 require("mssql.nvim").setup({
@@ -109,6 +109,12 @@ require("mssql.nvim").setup({
   print("mssql.nvim is ready!")
 end)
 ```
+
+### Keymaps
+
+Pass in a prefix to `set_keymaps` to have all keymaps set up with that prefix
+first. In the above example, new query would be `<leader>dn`. If you have
+which-key installed, then the prefix you provide will be a which-key group.
 
 ### Options
 
@@ -128,28 +134,18 @@ end)
 
 ## Usage
 
-```lua
-local mssql = require("mssql")
+You can call the following as key maps typing your [prefix](###-keymaps) first,
+or as functions on `require("mssql")`.
 
--- Open sql connections file for editing. See below for more
-mssql.edit_connections()
-
--- Open a new buffer for sql queries
-mssql.new_query()
-
--- Look for the connection called "default", prompt to choose a database in that server,
--- connect to that database and open a new buffer for querying (very useful!)
-mssql.new_default_query()
-
--- Connect the current buffer (you'll be prompted to choose a connection)
-mssql.connect()
-
--- Rebuild the intellisense cache
-mssql.refresh_intellisense_cache()
-
--- Disconnects the current buffer
-mssql.disconnect()
-```
+| Key map | Function                       | Description                                                                                                                                                      |
+| ------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `n`     | `new_query()`                  | Open a new buffer for sql queries                                                                                                                                |
+| `c`     | `connect()`                    | Connect the current buffer (you'll be prompted to choose a connection)                                                                                           |
+| `x`     | `execute_query()`              | Execute the selection, or the whole buffer                                                                                                                       |
+| `q`     | `disconnect()`                 | Disconnects the current buffer                                                                                                                                   |
+| `d`     | `new_default_query`            | Look for the connection called "default", prompt to choose a database in that server, connect to that database and open a new buffer for querying (very useful!) |
+| `r`     | `refresh_intellisense_cache()` | Rebuild the intellisense cache                                                                                                                                   |
+| `e`     | `edit_connections()`           | Open the [connections file](##-Connections-json-file) for editing                                                                                                |
 
 ## Connections json file
 
