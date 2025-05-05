@@ -95,39 +95,6 @@ Pass in a prefix to `set_keymaps` to have all keymaps set up with that prefix
 first. In the above example, new query would be `<leader>dn`. If you have
 which-key installed, then the prefix you provide will be a which-key group.
 
-## Options
-
-Setup with options:
-
-```lua
-require("mssql.nvim").setup({
-  max_rows = 50,
-  max_column_width = 50,
-})
-
--- With callback
-require("mssql.nvim").setup({
-  max_rows = 50,
-  max_column_width = 50,
-}, function()
-  print("mssql.nvim is ready!")
-end)
-```
-
-| Option             | Type      | Description                                                                                                                                                       | Default                       |
-| ------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| `max_rows`         | `int?`    | Max rows to return for queries. Needed so that large results don't crash neovim.                                                                                  | `100`                         |
-| `max_column_width` | `int?`    | If a result row has a field text length larger than this it will be truncated when displayed                                                                      | `100`                         |
-| `data_dir`         | `string?` | Directory to store download tools and internal config options                                                                                                     | `vim.fn.stdpath("data")`      |
-| `tools_file`       | `string?` | Path to an existing [SQL tools service](https://github.com/microsoft/sqltoolsservice/releases) binary. If `nil`, then the binary is auto downloaded to `data_dir` | `nil`                         |
-| `connections_file` | `string?` | Path to a json file containing connections (see below)                                                                                                            | `<data_dir>/connections.json` |
-
-### Notes
-
-- `setup()` runs asynchronously as it may take some time to first download and
-  extract the sql tools. Pass a callback as the second argument if you need to
-  run code after initialization.
-
 ## Usage
 
 You can call the following as key maps typing your [prefix](#setup) first, or as
@@ -168,7 +135,40 @@ The format is `"connection name": connection object`. Eg:
 }
 ```
 
-[Full details of the connection json here](docs/Connections-Json.md).
+[Full details of the connections json here](docs/Connections-Json.md).
+
+## Options
+
+Setup with options:
+
+```lua
+require("mssql.nvim").setup({
+  max_rows = 50,
+  max_column_width = 50,
+})
+
+-- With callback
+require("mssql.nvim").setup({
+  max_rows = 50,
+  max_column_width = 50,
+}, function()
+  print("mssql.nvim is ready!")
+end)
+```
+
+| Option             | Type      | Description                                                                                                                                                       | Default                       |
+| ------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `max_rows`         | `int?`    | Max rows to return for queries. Needed so that large results don't crash neovim.                                                                                  | `100`                         |
+| `max_column_width` | `int?`    | If a result row has a field text length larger than this it will be truncated when displayed                                                                      | `100`                         |
+| `data_dir`         | `string?` | Directory to store download tools and internal config options                                                                                                     | `vim.fn.stdpath("data")`      |
+| `tools_file`       | `string?` | Path to an existing [SQL tools service](https://github.com/microsoft/sqltoolsservice/releases) binary. If `nil`, then the binary is auto downloaded to `data_dir` | `nil`                         |
+| `connections_file` | `string?` | Path to a json file containing connections (see below)                                                                                                            | `<data_dir>/connections.json` |
+
+### Notes
+
+- `setup()` runs asynchronously as it may take some time to first download and
+  extract the sql tools. Pass a callback as the second argument if you need to
+  run code after initialization.
 
 ## Roadmap
 
