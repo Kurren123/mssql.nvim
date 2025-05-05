@@ -173,7 +173,7 @@ end)
 ## Roadmap
 
 - Save queries as csv/excel
-- Backup/restore databases (something I use in sql server a lot)
+- Backup/restore databases (something I use in SSMS a lot)
 - Object explorer
 
 Long term:
