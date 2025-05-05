@@ -134,8 +134,8 @@ which-key installed, then the prefix you provide will be a which-key group.
 
 ## Usage
 
-You can call the following as key maps typing your [prefix](###-keymaps) first,
-or as functions on `require("mssql")`.
+You can call the following as key maps typing your [prefix](#keymaps) first, or
+as functions on `require("mssql")`.
 
 | Key map | Function                       | Description                                                                                                                                                      |
 | ------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -145,7 +145,7 @@ or as functions on `require("mssql")`.
 | `q`     | `disconnect()`                 | Disconnects the current buffer                                                                                                                                   |
 | `d`     | `new_default_query`            | Look for the connection called "default", prompt to choose a database in that server, connect to that database and open a new buffer for querying (very useful!) |
 | `r`     | `refresh_intellisense_cache()` | Rebuild the intellisense cache                                                                                                                                   |
-| `e`     | `edit_connections()`           | Open the [connections file](##-Connections-json-file) for editing                                                                                                |
+| `e`     | `edit_connections()`           | Open the [connections file](#Connections-json-file) for editing                                                                                                  |
 
 ## Connections json file
 
@@ -173,3 +173,14 @@ The format is `"connection name": connection object`. Eg:
 ```
 
 [Full details of the connection json here](docs/Connections-Json.md).
+
+## Roadmap
+
+- Save queries as csv/excel
+- Backup/restore databases (something I use in sql server a lot)
+- Object explorer
+
+Long term:
+
+- Tree sitter
+- Formatter
