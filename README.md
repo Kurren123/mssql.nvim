@@ -2,7 +2,13 @@
 
 # mssql.nvim
 
+<p align="center" >
+<img src="./docs/Logo.png" alt="Logo" width="200" />
+</p>
+
+<p align="center" >
 An SQL Server plugin for neovim. Like it? Give a ⭐️!
+</p>
 
 ## Features
 
