@@ -450,6 +450,12 @@ M.set_keymaps = function(prefix)
 			desc = "New Default Query",
 			icon = { icon = "", color = "yellow" },
 		},
+		switch_database = {
+			"s",
+			M.switch_database,
+			desc = "Switch Database",
+			icon = { icon = "", color = "yellow" },
+		},
 	}
 
 	local success, wk = pcall(require, "which-key")
@@ -482,6 +488,7 @@ M.set_keymaps = function(prefix)
 							keymaps.refresh_intellisense,
 							keymaps.execute_query,
 							keymaps.disconnect,
+							keymaps.switch_database,
 						}
 					elseif state == states.Disconnected then
 						return {
