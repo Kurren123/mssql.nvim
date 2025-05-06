@@ -267,30 +267,18 @@ local function new_query_async()
 	return buf, client
 end
 
-local function new_default_query_async(opts)
-	utils.wait_for_schedule_async()
-
-	local connections = get_connections(opts)
-	if not (connections and connections.default) then
-		utils.log_info("Add a connection called 'default'")
-		edit_connections(opts)
-		return
+local function switch_database_async(buf)
+	if buf == nil then
+		buf = vim.api.nvim_get_current_buf()
 	end
-	local connection = connections.default
-
-	local buf, client = new_query_async()
 	local query_manager = vim.b[buf].query_manager
 	if not query_manager then
-		error("CRITICAL: Lsp attached without query manager")
+		error("No mssql lsp is attached. Create a new query or open an exising one.", 0)
 	end
-
-	local connectParams = {
-		connection = {
-			options = connection,
-		},
-	}
-
-	query_manager.connect_async(connectParams)
+	if query_manager.get_state() ~= query_manager_module.states.Connected then
+		error("You need to connect first", 0)
+	end
+	local client = query_manager.get_lsp_client()
 
 	local result, err = utils.lsp_request_async(
 		client,
@@ -310,17 +298,44 @@ local function new_default_query_async(opts)
 		return
 	end
 
+	-- get the connect params first, because they get set
+	-- to nil when we disconnect
+	local connect_params = query_manager.get_connect_params()
 	-- disconnect, change the database and connect again
 	query_manager.disconnect_async()
 
-	connection.database = db
-	connectParams = {
+	connect_params.connection.options.database = db
+
+	query_manager.connect_async(connect_params)
+	utils.log_info("Connected")
+end
+
+local function new_default_query_async(opts)
+	utils.wait_for_schedule_async()
+
+	local connections = get_connections(opts)
+	if not (connections and connections.default) then
+		utils.log_info("Add a connection called 'default'")
+		edit_connections(opts)
+		return
+	end
+	local connection = connections.default
+
+	local buf = new_query_async()
+	local query_manager = vim.b[buf].query_manager
+	if not query_manager then
+		error("CRITICAL: Lsp attached without query manager")
+	end
+
+	local connectParams = {
 		connection = {
 			options = connection,
 		},
 	}
+
 	query_manager.connect_async(connectParams)
-	utils.log_info("Connected")
+
+	switch_database_async(buf)
 end
 
 local M = {
@@ -335,6 +350,14 @@ local M = {
 	new_default_query = function()
 		utils.try_resume(coroutine.create(function()
 			new_default_query_async(plugin_opts)
+		end))
+	end,
+
+	-- Prompts for a database to switch to that is on the currently
+	-- connected server
+	switch_database = function()
+		utils.try_resume(coroutine.create(function()
+			switch_database_async()
 		end))
 	end,
 

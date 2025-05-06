@@ -6,12 +6,14 @@ local states = {
 	Connected = "connected",
 	Executing = "executing a query",
 }
+
 return {
 	states = states,
 	-- creates a query manager, which
 	-- interacts with sql server while maintaining a state
 	create_query_manager = function(bufnr, client)
 		local state = states.Disconnected
+		local last_connect_params
 
 		return {
 			-- the owner uri gets added to the connect_params
@@ -40,6 +42,7 @@ return {
 				end
 
 				state = states.Connected
+				last_connect_params = connect_params
 			end,
 
 			disconnect_async = function()
@@ -52,6 +55,7 @@ return {
 					{ ownerUri = vim.uri_from_fname(vim.api.nvim_buf_get_name(bufnr)) }
 				)
 				state = states.Disconnected
+				last_connect_params = nil
 			end,
 
 			execute_async = function(query)
@@ -89,6 +93,14 @@ return {
 
 			get_state = function()
 				return state
+			end,
+
+			get_connect_params = function()
+				return vim.tbl_deep_extend("keep", last_connect_params, {})
+			end,
+
+			get_lsp_client = function()
+				return client
 			end,
 		}
 	end,
