@@ -24,7 +24,7 @@ and cross database queries
 
 <img src="./docs/screenshots/Cross_db_completion.png" alt="Cross db completion" width="300"/>
 
-Execute queries, with results in markdown tables for autoamtic colouring and
+Execute queries, with results in markdown tables for automatic colouring and
 rendering
 
 ![results screenshot](./docs/screenshots/Results.png)
@@ -106,9 +106,10 @@ functions on `require("mssql")`.
 | `c`     | `connect()`                    | Connect the current buffer (you'll be prompted to choose a connection)                                                                                           |
 | `x`     | `execute_query()`              | Execute the selection, or the whole buffer                                                                                                                       |
 | `q`     | `disconnect()`                 | Disconnects the current buffer                                                                                                                                   |
-| `d`     | `new_default_query`            | Look for the connection called "default", prompt to choose a database in that server, connect to that database and open a new buffer for querying (very useful!) |
+| `s`     | `switch_database()`            | Prompts, then switches to a database that is on the currently connected server                                                                                   |
+| `d`     | `new_default_query()`          | Look for the connection called "default", prompt to choose a database in that server, connect to that database and open a new buffer for querying (very useful!) |
 | `r`     | `refresh_intellisense_cache()` | Rebuild the intellisense cache                                                                                                                                   |
-| `e`     | `edit_connections()`           | Open the [connections file](#Connections-json-file) for editing                                                                                                  |
+| `e`     | `edit_connections()`           | Open the [connections file](#connections-json-file) for editing                                                                                                  |
 
 ## Connections json file
 
