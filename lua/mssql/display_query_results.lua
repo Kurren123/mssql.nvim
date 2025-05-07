@@ -97,31 +97,40 @@ local function display_markdown(lines, buffer_name)
 	vim.api.nvim_set_current_buf(bufnr)
 end
 
+local function get_rows(subset_params)
+	if not (subset_params and subset_params.rowsCount and subset_params.rowsCount > 0) then
+		return {}
+	end
+
+	local client = utils.get_lsp_client(subset_params.ownerUri)
+	if subset_params then
+		local result, err = utils.lsp_request_async(client, "query/subset", subset_params)
+		if err then
+			error("Error getting rows: " .. vim.inspect(err), 0)
+		elseif not result then
+			error("Error getting rows", 0)
+		end
+
+		return vim.iter(result.resultSubset.rows)
+			:map(function(cells)
+				return vim.iter(cells)
+					:map(function(cell)
+						return cell.displayValue
+					end)
+					:totable()
+			end)
+			:totable()
+	end
+end
+
 local function show_result_set_async(column_info, subset_params, max_width)
 	local column_headers = vim.iter(column_info)
 		:map(function(i)
 			return i.columnName
 		end)
 		:totable()
-	local client = utils.get_lsp_client(subset_params.ownerUri)
 
-	local result, err = utils.lsp_request_async(client, "query/subset", subset_params)
-	if err then
-		error("Error getting rows: " .. vim.inspect(err), 0)
-	elseif not result then
-		error("Error getting rows", 0)
-	end
-
-	local rows = vim.iter(result.resultSubset.rows)
-		:map(function(cells)
-			return vim.iter(cells)
-				:map(function(cell)
-					return cell.displayValue
-				end)
-				:totable()
-		end)
-		:totable()
-
+	local rows = get_rows(subset_params)
 	local lines = pretty_print(column_headers, rows, max_width)
 	display_markdown(
 		lines,
@@ -140,16 +149,17 @@ local function display_query_results(opts, result)
 	for batch_index, batch_summary in ipairs(result.batchSummaries) do
 		if batch_summary.resultSetSummaries then
 			for result_set_index, result_set_summary in ipairs(batch_summary.resultSetSummaries) do
+				local subset_params = {
+					ownerUri = result.ownerUri,
+					batchIndex = batch_index - 1,
+					resultSetIndex = result_set_index - 1,
+					rowsStartIndex = 0,
+					rowsCount = math.min(result_set_summary.rowCount, opts.max_rows),
+				}
 				-- fetch and show all results at once
 				vim.schedule(function()
 					utils.try_resume(coroutine.create(function()
-						show_result_set_async(result_set_summary.columnInfo, {
-							ownerUri = result.ownerUri,
-							batchIndex = batch_index - 1,
-							resultSetIndex = result_set_index - 1,
-							rowsStartIndex = 0,
-							rowsCount = opts.max_rows,
-						}, opts.max_column_width)
+						show_result_set_async(result_set_summary.columnInfo, subset_params, opts.max_column_width)
 					end))
 				end)
 			end
