@@ -3,16 +3,15 @@ local test_utils = require("tests.utils")
 local utils = require("mssql.utils")
 
 return {
-	test_name = "Connect to database should work",
+	test_name = "Switch database should work",
 	run_test_async = function()
-		test_utils.ui_select_fake("master")
-		mssql.connect()
+		test_utils.ui_select_fake("TestDbB")
+		mssql.switch_database()
 		local client = vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1]
 		local buf = vim.api.nvim_get_current_buf()
 
 		-- The connect event is sent, then the intelliSenseReady event.
 		-- Wait for the intelliSenseReady event as this means the connection was successful and
-		-- We can progress to the next test (getting completion items)
 		local result, err = utils.wait_for_notification_async(buf, client, "textDocument/intelliSenseReady", 30000)
 		if err then
 			error(err.message)

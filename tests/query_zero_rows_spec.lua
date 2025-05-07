@@ -3,9 +3,9 @@ local utils = require("mssql.utils")
 local test_utils = require("tests.utils")
 
 return {
-	test_name = "Queries should execute and show results",
+	test_name = "Queries returning zero rows should work",
 	run_test_async = function()
-		local query = "SELECT * from TestDbA.dbo.Person join TestDbB.dbo.Car on Person.ID = Car.PersonId"
+		local query = "SELECT * from Car WHERE 1=0"
 		vim.api.nvim_buf_set_lines(0, 0, -1, false, { query })
 		utils.wait_for_schedule_async()
 		mssql.execute_query()
@@ -20,8 +20,6 @@ return {
 		test_utils.defer_async(2000)
 
 		local results = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
-		assert(results:find("Bob"), "Sql query results do not contain Bob")
-		assert(results:find("Hyundai"), "Sql query results do not contain Hyundai")
-		vim.cmd("bdelete")
+		assert(results:find("Make"), "Sql query results with zero rows are not showing the column headings")
 	end,
 }
