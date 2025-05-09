@@ -293,10 +293,7 @@ local function switch_database_async(buf)
 	end
 
 	local db = utils.ui_select_async(result.databaseNames, { prompt = "Choose database" })
-	if not db then
-		utils.log_info("No database chosen. Using default")
-		return
-	end
+	utils.safe_assert(db, "No database chosen")
 
 	-- get the connect params first, because they get set
 	-- to nil when we disconnect

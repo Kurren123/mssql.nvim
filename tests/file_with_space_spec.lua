@@ -5,16 +5,23 @@ local utils = require("mssql.utils")
 return {
 	test_name = "Should be able to connect with a filename with spaces",
 	run_test_async = function()
-		vim.cmd('edit "tests/filename\\ with\\ spaces.sql"')
-		test_utils.ui_select_fake("master")
-		mssql.connect()
+		vim.cmd("edit tests/filename\\ with\\ spaces.sql")
+		test_utils.defer_async(1000)
 
-		utils.defer_async(2000)
-		mssql.refresh_intellisense_cache()
 		local client = vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1]
 		local buf = vim.api.nvim_get_current_buf()
 
-		local result, err = utils.wait_for_notification_async(buf, client, "textDocument/intelliSenseReady", 5000)
+		test_utils.ui_select_fake("default")
+		mssql.connect()
+		local _, err1 = utils.wait_for_notification_async(buf, client, "textDocument/intelliSenseReady", 10000)
+		if err1 then
+			error(err1.message)
+		end
+
+		utils.defer_async(2000)
+		mssql.refresh_intellisense_cache()
+
+		local result, err = utils.wait_for_notification_async(buf, client, "textDocument/intelliSenseReady", 10000)
 		if err then
 			error(err.message)
 		end
