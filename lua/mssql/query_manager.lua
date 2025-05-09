@@ -22,7 +22,7 @@ return {
 					error("You are currently " .. state, 0)
 				end
 
-				connect_params.ownerUri = vim.uri_from_fname(vim.api.nvim_buf_get_name(bufnr))
+				connect_params.ownerUri = utils.lsp_file_uri(bufnr)
 				state = states.Connecting
 
 				local result, err
@@ -49,11 +49,7 @@ return {
 				if state ~= states.Connected then
 					error("You are currently " .. state, 0)
 				end
-				utils.lsp_request_async(
-					client,
-					"connection/disconnect",
-					{ ownerUri = vim.uri_from_fname(vim.api.nvim_buf_get_name(bufnr)) }
-				)
+				utils.lsp_request_async(client, "connection/disconnect", { ownerUri = utils.lsp_file_uri(bufnr) })
 				state = states.Disconnected
 				last_connect_params = nil
 			end,
@@ -67,7 +63,7 @@ return {
 				local result, err = utils.lsp_request_async(
 					client,
 					"query/executeString",
-					{ query = query, ownerUri = vim.uri_from_fname(vim.api.nvim_buf_get_name(bufnr)) }
+					{ query = query, ownerUri = utils.lsp_file_uri(bufnr) }
 				)
 
 				if err then

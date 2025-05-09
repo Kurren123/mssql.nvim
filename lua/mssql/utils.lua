@@ -45,11 +45,21 @@ local try_resume =
 		return result
 	end
 
+local lsp_file_uri = function(bufnr)
+	bufnr = bufnr or vim.api.nvim_get_current_buf()
+	local fname = vim.api.nvim_buf_get_name(bufnr)
+	local path = vim.loop.fs_realpath(fname) or fname
+	if vim.loop.os_uname().sysname == "Windows_NT" then
+		path = path:gsub("\\", "/")
+	end
+	return "file:///" .. path
+end
+
 local get_lsp_client = function(owner_uri)
 	local bufnr
 	if owner_uri then
 		bufnr = vim.iter(vim.api.nvim_list_bufs()):find(function(buf)
-			return vim.uri_from_fname(vim.api.nvim_buf_get_name(buf)) == owner_uri
+			return lsp_file_uri(buf) == owner_uri
 		end)
 		safe_assert(bufnr, "No buffer found with filename " .. owner_uri)
 	else
@@ -88,7 +98,7 @@ return {
 	---@return any result
 	---@return lsp.ResponseError? error
 	wait_for_notification_async = function(bufnr, client, method, timeout)
-		local owner_uri = vim.uri_from_fname(vim.api.nvim_buf_get_name(bufnr))
+		local owner_uri = lsp_file_uri(bufnr)
 		local this = coroutine.running()
 		local resumed = false
 		local existing_handler = client.handlers[method]
@@ -169,4 +179,7 @@ return {
 
 		return table.concat(lines, "\n")
 	end,
+	--- The LSP wants the file path to be absolute and start with file:///,
+	--- But it doesn't want special characters like spaces to be escaped.
+	lsp_file_uri = lsp_file_uri,
 }
