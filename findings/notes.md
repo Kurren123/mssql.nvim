@@ -36,8 +36,9 @@ Eg:
 file:///c:/project/readme.md
 ```
 
-However it does _not_ expect us to escape special characters such as spaces. So
-just put `file:///` at the start of the path.
+However it
+[expects the file name to be unescaped](https://github.com/microsoft/sqltoolsservice/blob/d75ef0c6deb44b340fae08cd7633bbbf1e951973/src/Microsoft.SqlTools.ServiceLayer/LanguageServices/LanguageService.cs#L718).
+So just put `file:///` at the start of the path.
 
 ## Timeouts
 
