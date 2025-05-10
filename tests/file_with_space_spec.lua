@@ -11,7 +11,7 @@ return {
 		local client = vim.lsp.get_clients({ name = "mssql_ls", bufnr = 0 })[1]
 		local buf = vim.api.nvim_get_current_buf()
 
-		test_utils.ui_select_fake("default")
+		test_utils.ui_select_fake("master")
 		mssql.connect()
 		local _, err1 = utils.wait_for_notification_async(buf, client, "textDocument/intelliSenseReady", 10000)
 		if err1 then
