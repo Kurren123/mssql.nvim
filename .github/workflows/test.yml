@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest]
 
     env:
       DbServer: localhost
@@ -28,7 +28,10 @@ jobs:
           sa-password: ${{ env.DbPassword }}
 
       - name: Run sqlcmd
-        run: sqlcmd -S "${{ env.DbServer }}" -U "${{ env.DbUser }}" -P "${{ env.DbPassword }}" -d "${{ env.DbDatabase }}" -i ./.github/workflows/seed.sql -C
+        run:
+          sqlcmd -S "${{ env.DbServer }}" -U "${{ env.DbUser }}" -P "${{
+          env.DbPassword }}" -d "${{ env.DbDatabase }}" -i
+          ./.github/workflows/seed.sql -C
 
       - name: Install winget (Windows)
         if: runner.os == 'Windows'
@@ -39,11 +42,6 @@ jobs:
         run: |
           winget install Neovim.Neovim --silent --accept-package-agreements --accept-source-agreements
           echo "$Env:ProgramFiles\Neovim\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
-
-      - name: Install Neovim (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install neovim
 
       - name: Install Neovim (Linux)
         if: runner.os == 'Linux'

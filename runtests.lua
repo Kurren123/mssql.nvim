@@ -42,7 +42,7 @@ local tests = {
 	require("tests.connect_spec"),
 	-- Due to the internal timeout (see findings.md),
 	-- This test in inconsistent
-	-- require("tests.dbo_completion_spec"),
+	require("tests.dbo_completion_spec"),
 	require("tests.execute_query_spec"),
 	require("tests.switch_database_spec"),
 	require("tests.query_zero_rows_spec"),
