@@ -531,7 +531,7 @@ M.set_keymaps = function(prefix)
 		wk.add(visual_group)
 	else
 		for _, m in pairs(keymaps) do
-			vim.keymap.set("n", prefix .. m[1], m[2], { desc = m.desc })
+			vim.keymap.set(m.mode or "n", prefix .. m[1], m[2], { desc = m.desc })
 		end
 	end
 end
