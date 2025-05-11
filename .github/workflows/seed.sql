@@ -25,8 +25,8 @@ CREATE TABLE PersonNonAscii
 INSERT INTO PersonNonAscii
   ([Name], Age)
 VALUES
-  ('Bob', 40),
-  (N'Böb', 40),
+  ('Very Long Name', 40),
+  (N'Bøb', 40),
   -- New line
   ('Bob' + CHAR(10), 40),
   -- Zero width space

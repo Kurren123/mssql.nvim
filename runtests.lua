@@ -47,6 +47,7 @@ local tests = {
 	require("tests.switch_database_spec"),
 	require("tests.query_zero_rows_spec"),
 	require("tests.file_with_space_spec"),
+	require("tests.non_ascii_spec"),
 }
 
 coroutine.resume(coroutine.create(function()

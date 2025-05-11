@@ -1,12 +1,15 @@
 local utils = require("mssql.utils")
 
-local function truncate_values(table, limit)
+local function sanitise(table, limit)
 	for _, record in ipairs(table) do
 		for index, value in ipairs(record) do
 			local str = tostring(value)
-			if #str > limit then
+			-- truncate
+			if vim.fn.strdisplaywidth(str) > limit then
 				str = str:sub(1, limit) .. "..."
 			end
+			-- replace newline chars with `\n`. Backticks to look good in markdown
+			str = str:gsub("\n", "`\\n`")
 			record[index] = str
 		end
 	end
@@ -15,11 +18,11 @@ end
 local function column_width(column_header, rows, column_index)
 	local row_max = vim.iter(rows)
 		:map(function(record)
-			return #record[column_index]
+			return vim.fn.strdisplaywidth(record[column_index])
 		end)
 		:fold(0, math.max)
 
-	return math.max(#column_header, row_max)
+	return math.max(vim.fn.strdisplaywidth(column_header), row_max)
 end
 
 local function column_widths(column_headers, rows)
@@ -35,10 +38,10 @@ local function column_widths(column_headers, rows)
 end
 
 local function right_pad(str, len, char)
-	if #str >= len then
+	if vim.fn.strdisplaywidth(str) >= len then
 		return str
 	end
-	return str .. string.rep(char, len - #str)
+	return str .. string.rep(char, len - vim.fn.strdisplaywidth(str))
 end
 
 local function row_to_string(row, widths)
@@ -68,7 +71,7 @@ local function pretty_print(column_headers, rows, max_width)
 		return ""
 	end
 
-	truncate_values(rows, max_width)
+	sanitise(rows, max_width)
 
 	local widths = column_widths(column_headers, rows)
 	local divider = header_divider(widths)
