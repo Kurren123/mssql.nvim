@@ -425,7 +425,13 @@ M.set_keymaps = function(prefix)
 		new_query = { "n", M.new_query, desc = "New Query", icon = { icon = "", color = "yellow" } },
 		connect = { "c", M.connect, desc = "Connect", icon = { icon = "󱘖", color = "green" } },
 		disconnect = { "q", M.disconnect, desc = "Disconnect", icon = { icon = "", color = "red" } },
-		execute_query = { "x", M.execute_query, desc = "Execute Query", icon = { icon = "", color = "green" } },
+		execute_query = {
+			"x",
+			M.execute_query,
+			desc = "Execute Query",
+			mode = { "n", "v" },
+			icon = { icon = "", color = "green" },
+		},
 		edit_connections = {
 			"e",
 			M.edit_connections,
@@ -454,51 +460,75 @@ M.set_keymaps = function(prefix)
 
 	local success, wk = pcall(require, "which-key")
 	if success then
-		wk.add({
-			{
-				prefix,
-				group = "mssql",
-				icon = { icon = "", color = "yellow" },
-				expand = function()
-					local qm = vim.b.query_manager
-					if not qm then
-						return { keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
-					end
+		local wkeygroup = {
+			prefix,
+			group = "mssql",
+			icon = { icon = "", color = "yellow" },
+		}
 
-					local state = qm.get_state()
-					local states = query_manager_module.states
-					if state == states.Connecting or state == states.Executing then
-						return {
-							keymaps.new_query,
-							keymaps.new_default_query,
-							keymaps.edit_connections,
-							keymaps.refresh_intellisense,
-						}
-					elseif state == states.Connected then
-						return {
-							keymaps.new_query,
-							keymaps.new_default_query,
-							keymaps.edit_connections,
-							keymaps.refresh_intellisense,
-							keymaps.execute_query,
-							keymaps.disconnect,
-							keymaps.switch_database,
-						}
-					elseif state == states.Disconnected then
-						return {
-							keymaps.new_query,
-							keymaps.new_default_query,
-							keymaps.edit_connections,
-							keymaps.refresh_intellisense,
-							keymaps.connect,
-						}
-					else
-						utils.log_error("Entered unrecognised query state: " .. state)
-						return {}
-					end
-				end,
-			},
-		})
+		local normal_group = vim.tbl_deep_extend("keep", wkeygroup, {})
+		normal_group.expand = function()
+			local qm = vim.b.query_manager
+			if not qm then
+				return { keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
+			end
+
+			local state = qm.get_state()
+			local states = query_manager_module.states
+			if state == states.Connecting or state == states.Executing then
+				return {
+					keymaps.new_query,
+					keymaps.new_default_query,
+					keymaps.edit_connections,
+					keymaps.refresh_intellisense,
+				}
+			elseif state == states.Connected then
+				return {
+					keymaps.new_query,
+					keymaps.new_default_query,
+					keymaps.edit_connections,
+					keymaps.refresh_intellisense,
+					keymaps.execute_query,
+					keymaps.disconnect,
+					keymaps.switch_database,
+				}
+			elseif state == states.Disconnected then
+				return {
+					keymaps.new_query,
+					keymaps.new_default_query,
+					keymaps.edit_connections,
+					keymaps.refresh_intellisense,
+					keymaps.connect,
+				}
+			else
+				utils.log_error("Entered unrecognised query state: " .. state)
+				return {}
+			end
+		end
+
+		wk.add(normal_group)
+
+		local visual_group = vim.tbl_deep_extend("keep", wkeygroup, {})
+		visual_group.mode = "v"
+		visual_group.expand = function()
+			local qm = vim.b.query_manager
+			if not qm then
+				return { keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
+			end
+
+			local state = qm.get_state()
+			local states = query_manager_module.states
+			if state == states.Connecting or state == states.Executing or state == states.Disconnected then
+				return {}
+			elseif state == states.Connected then
+				return { keymaps.execute_query }
+			else
+				utils.log_error("Entered unrecognised query state: " .. state)
+				return {}
+			end
+		end
+
+		wk.add(visual_group)
 	else
 		for _, m in pairs(keymaps) do
 			vim.keymap.set("n", prefix .. m[1], m[2], { desc = m.desc })
