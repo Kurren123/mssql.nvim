@@ -1,3 +1,10 @@
+local function wait_for_schedule_async()
+	local co = coroutine.running()
+	vim.schedule(function()
+		coroutine.resume(co)
+	end)
+	coroutine.yield()
+end
 ---@param msg string
 ---@param level vim.log.levels
 local function log(msg, level)
@@ -74,13 +81,7 @@ end
 
 return {
 	contains = contains,
-	wait_for_schedule_async = function()
-		local co = coroutine.running()
-		vim.schedule(function()
-			coroutine.resume(co)
-		end)
-		coroutine.yield()
-	end,
+	wait_for_schedule_async = wait_for_schedule_async,
 	defer_async = function(ms)
 		local co = coroutine.running()
 		vim.defer_fn(function()
@@ -146,6 +147,7 @@ return {
 	end,
 	try_resume = try_resume,
 	ui_select_async = function(items, opts)
+		wait_for_schedule_async()
 		local this = coroutine.running()
 		vim.ui.select(items, opts, function(selected)
 			vim.schedule(function()
