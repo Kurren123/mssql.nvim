@@ -147,6 +147,8 @@ return {
 	end,
 	try_resume = try_resume,
 	ui_select_async = function(items, opts)
+		-- Schedule this as it gives other UI like which-key
+		-- a chance to close
 		wait_for_schedule_async()
 		local this = coroutine.running()
 		vim.ui.select(items, opts, function(selected)
