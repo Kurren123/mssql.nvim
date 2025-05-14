@@ -43,7 +43,7 @@ local function enable_lsp(opts)
 	-- sometimes two of these come at once, so hide for 1s
 	local hide_intellisense_ready = false
 
-	vim.lsp.config[lsp_name] = {
+	local config = {
 		cmd = {
 			opts.tools_file or default_path,
 			"--enable-connection-pooling",
@@ -92,6 +92,11 @@ local function enable_lsp(opts)
 		end,
 	}
 
+	if opts.lsp_settings then
+		config.settings = { mssql = opts.lsp_settings }
+	end
+
+	vim.lsp.config[lsp_name] = config
 	vim.lsp.enable("mssql_ls")
 end
 
@@ -164,6 +169,7 @@ local function setup_async(opts)
 		max_rows = 100,
 		max_column_width = 100,
 		keymap_prefix = nil,
+		lsp_settings = nil,
 	}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 
