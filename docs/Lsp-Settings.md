@@ -6,7 +6,8 @@ These are the default settings used by the LSP, taken from the language server
 > [!WARNING]  
 > Not all features have yet been implmented in in this plugin. All documented
 > options that the LSP will accept are below, however many of them will have no
-> effect when using this plugin.
+> effect when using this plugin. Particularly formatting and object explorer
+> settings.
 
 ```lua
 return {
