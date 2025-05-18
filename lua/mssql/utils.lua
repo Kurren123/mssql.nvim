@@ -54,10 +54,11 @@ local try_resume =
 
 local lsp_file_uri = function(bufnr)
 	bufnr = bufnr or vim.api.nvim_get_current_buf()
-	local fname = vim.api.nvim_buf_get_name(bufnr)
-	local path = vim.loop.fs_realpath(fname) or fname
-	if vim.loop.os_uname().sysname == "Windows_NT" then
-		path = "/" .. path:gsub("\\", "/")
+	local path = vim.api.nvim_buf_get_name(bufnr)
+	path = vim.fs.normalize(path)
+	path = vim.fs.abspath(path)
+	if vim.uv.os_uname().sysname == "Windows_NT" then
+		path = "/" .. path
 	end
 	return "file://" .. path
 end
