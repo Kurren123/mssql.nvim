@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     env:
       DbServer: localhost
@@ -42,6 +42,11 @@ jobs:
         run: |
           winget install Neovim.Neovim --silent --accept-package-agreements --accept-source-agreements
           echo "$Env:ProgramFiles\Neovim\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+
+      - name: Install Neovim (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install neovim
 
       - name: Install Neovim (Linux)
         if: runner.os == 'Linux'
