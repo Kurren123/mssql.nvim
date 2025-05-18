@@ -57,9 +57,9 @@ local lsp_file_uri = function(bufnr)
 	local fname = vim.api.nvim_buf_get_name(bufnr)
 	local path = vim.loop.fs_realpath(fname) or fname
 	if vim.loop.os_uname().sysname == "Windows_NT" then
-		path = path:gsub("\\", "/")
+		path = "/" .. path:gsub("\\", "/")
 	end
-	return "file:///" .. path
+	return "file://" .. path
 end
 
 local get_lsp_client = function(owner_uri)
