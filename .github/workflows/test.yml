@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload Neovim state folder
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: nvim-state-dump
           path: nvim-state-dump
