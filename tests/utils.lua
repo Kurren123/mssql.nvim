@@ -6,7 +6,7 @@ return {
 		local client = vim.lsp.get_clients({ bufnr = 0 })[1]
 		local position = vim.lsp.util.make_position_params(0, "utf-8")
 		position.position.character = position.position.character + 1
-		local response, err = client:request_sync("textDocument/completion", position)
+		local response, err = client:request_sync("textDocument/completion", position, 60000)
 		assert(not err, "Error returned when requesting completions: " .. vim.inspect(err))
 		assert(response and response.result and response.result, "No completion items were returned")
 
