@@ -59,3 +59,11 @@ jobs:
       - name: Run Neovim tests
         run: |
           nvim -u runtests.lua --headless
+
+      - name: Upload Neovim state folder
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: nvim-state-dump
+          path: nvim-state-dump
+          if-no-files-found: ignore

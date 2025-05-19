@@ -20,7 +20,24 @@ vim.opt.rtp:prepend(get_plugin_root())
 vim.opt.swapfile = false
 -- Don't have autocomplete auto insert selections
 vim.o.completeopt = "menu,menuone,noselect,noinsert"
+
+local src = vim.fn.stdpath("state")
+print_without_prompt("nvim state path: " .. src)
 vim.lsp.set_log_level("debug")
+
+local function copy_state_folder()
+	if vim.env.GITHUB_ACTIONS == "true" then
+		local src = vim.fn.stdpath("state")
+		print_without_prompt("nvim state path: " .. src)
+		local dst = "nvim-state-dump"
+
+		if vim.fn.has("win32") == 1 then
+			vim.fn.system({ "xcopy", "/E", "/I", "/Y", src, dst })
+		else
+			vim.fn.system({ "cp", "-r", src, dst })
+		end
+	end
+end
 
 local function run_test(test)
 	print_without_prompt("=== Running: " .. test.test_name .. " ===")
@@ -28,6 +45,7 @@ local function run_test(test)
 
 	if not success then
 		print_without_prompt("\n" .. test.test_name .. " FAILED: " .. err)
+		copy_state_folder()
 		os.exit(1)
 	else
 		print_without_prompt("\nTest passed\n")
