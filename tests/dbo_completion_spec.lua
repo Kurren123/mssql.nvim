@@ -10,28 +10,31 @@ local test_completions = function(sql, expected_completion_item)
 
 	-- move to the end
 	vim.api.nvim_win_set_cursor(0, { 1, #sql })
-	local items
 
 	-- try it a few times as the first might internally time out.
 	-- See findings.md for more
 	for _ = 1, 5 do
-		items = test_utils.get_completion_items()
-		if items and utils.contains(items, expected_completion_item) then
-			break
+		local items, err = pcall(test_utils.get_completion_items)
+		if err then
+			print(vim.inspect(err))
+		else
+			if items and utils.contains(items, expected_completion_item) then
+				break
+			end
+			-- the internal timeout is 500ms so wait 550
+			test_utils.defer_async(550)
 		end
-		-- the internal timeout is 500ms so wait 550
-		test_utils.defer_async(550)
+		assert(#items > 0, "Neovim didn't provide any completion items")
+		assert(
+			utils.contains(items, expected_completion_item),
+			"Completion items: "
+				.. vim.inspect(items)
+				.. " for query "
+				.. sql
+				.. " didn't include "
+				.. expected_completion_item
+		)
 	end
-	assert(#items > 0, "Neovim didn't provide any completion items")
-	assert(
-		utils.contains(items, expected_completion_item),
-		"Completion items: "
-			.. vim.inspect(items)
-			.. " for query "
-			.. sql
-			.. " didn't include "
-			.. expected_completion_item
-	)
 end
 
 return {
