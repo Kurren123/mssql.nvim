@@ -3,16 +3,16 @@ local utils = require("mssql.utils")
 return {
 	defer_async = utils.defer_async,
 	get_completion_items = function()
-		-- Trigger <C-x><C-o> to invoke omnifunc
-		vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("a<C-x><C-o>", true, false, true), "n", true)
+		local client = vim.lsp.get_clients({ bufnr = 0 })[1]
+		local position = vim.lsp.util.make_position_params(0, "utf-8")
+		position.position.character = position.position.character + 1
+		local response, err = client:request_sync("textDocument/completion", position)
+		assert(not err, "Error returned when requesting completions: " .. vim.inspect(err))
+		assert(response and response.result and response.result, "No completion items were returned")
 
-		-- Completion results are async
-		utils.defer_async(500)
-		local items = vim.fn.complete_info({ "items" }).items or {}
-		vim.cmd("stopinsert")
-		return vim.iter(items)
+		return vim.iter(response.result)
 			:map(function(item)
-				return item.word or item.abbr
+				return item.label
 			end)
 			:totable()
 	end,

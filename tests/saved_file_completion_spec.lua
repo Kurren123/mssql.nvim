@@ -16,6 +16,6 @@ return {
 		vim.api.nvim_win_set_cursor(0, { 1, 1 })
 		local items = test_utils.get_completion_items()
 		assert(#items > 0, "Neovim didn't provide any completion items")
-		assert(utils.contains(items, "SELECT"))
+		assert(utils.contains(items, "SELECT"), "SELECT is not contained within: " .. vim.inspect(items))
 	end,
 }

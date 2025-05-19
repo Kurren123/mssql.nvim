@@ -25,7 +25,12 @@ local test_completions = function(sql, expected_completion_item)
 	assert(#items > 0, "Neovim didn't provide any completion items")
 	assert(
 		utils.contains(items, expected_completion_item),
-		"Completion items for query " .. sql .. " didn't include " .. expected_completion_item
+		"Completion items: "
+			.. vim.inspect(items)
+			.. " for query "
+			.. sql
+			.. " didn't include "
+			.. expected_completion_item
 	)
 end
 
