@@ -36,7 +36,7 @@ don't show `Connect` if we are already connected)
 
 Lualine integration
 
-<img src="./docs/screenshots/Lualine.png" alt="Which key screenshot" width="300"/>
+<img src="./docs/screenshots/Lualine.png" alt="Which key screenshot" width="600"/>
 
 ## Installation
 
