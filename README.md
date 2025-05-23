@@ -34,6 +34,10 @@ don't show `Connect` if we are already connected)
 
 <img src="./docs/screenshots/Which-key.png" alt="Which key screenshot" width="300"/>
 
+Lualine integration
+
+<img src="./docs/screenshots/Which-key.png" alt="Which key screenshot" width="300"/>
+
 ## Installation
 
 Requires Neovim v0.11.0 or later.
@@ -94,6 +98,26 @@ require("mssql").set_keymaps("<leader>d")
 Pass in a prefix to `set_keymaps` to have all keymaps set up with that prefix
 first. In the above example, new query would be `<leader>dn`. If you have
 which-key installed, then the prefix you provide will be a which-key group.
+
+### Lualine
+
+Insert `require("mssql").lualine_component` into a lualine section (eg
+`lualine_c`).
+
+Eg in lazyvim this would be:
+
+```lua
+return {
+  "nvim-lualine/lualine.nvim",
+  dependencies = { "Kurren123/mssql.nvim" },
+  opts = function(_, opts)
+    table.insert(opts.sections.lualine_c, require("mssql").lualine_component)
+    return opts
+  end,
+}
+```
+
+You can also use the `lualine_component` in other status lines.
 
 ## Usage
 

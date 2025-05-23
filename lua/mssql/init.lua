@@ -412,6 +412,7 @@ local M = {
 			display_query_results(plugin_opts, result)
 		end))
 	end,
+
 	setup = function(opts, callback)
 		utils.try_resume(coroutine.create(function()
 			setup_async(opts)
@@ -420,6 +421,38 @@ local M = {
 			end
 		end))
 	end,
+
+	lualine_component = {
+		function()
+			local qm = vim.b.query_manager
+			if not qm then
+				return
+			end
+			local state = qm.get_state()
+			if state == query_manager_module.states.Disconnected then
+				return "Disconnected"
+			elseif state == query_manager_module.states.Connecting then
+				return "Connecting..."
+			elseif state == query_manager_module.states.Executing then
+				return "Executing..."
+			elseif state == query_manager_module.states.Connected then
+				local connect_params = qm.get_connect_params()
+				if not (connect_params and connect_params.connection and connect_params.connection.options) then
+					return "Connected"
+				end
+				local db = connect_params.connection.options.database
+				local server = connect_params.connection.options.server
+				if not (db or server) then
+					return "Connected"
+				end
+
+				return server .. " | " .. db
+			end
+		end,
+		cond = function()
+			return vim.b.query_manager ~= nil
+		end,
+	},
 }
 
 M.set_keymaps = function(prefix)
