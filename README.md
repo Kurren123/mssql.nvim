@@ -124,16 +124,16 @@ You can also use the `lualine_component` in other status lines.
 You can call the following as key maps typing your [prefix](#setup) first, or as
 functions on `require("mssql")`.
 
-| Key map | Function                       | Description                                                                                                                                                      |
-| ------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `n`     | `new_query()`                  | Open a new buffer for sql queries                                                                                                                                |
-| `c`     | `connect()`                    | Connect the current buffer (you'll be prompted to choose a connection)                                                                                           |
-| `x`     | `execute_query()`              | Execute the selection, or the whole buffer                                                                                                                       |
-| `q`     | `disconnect()`                 | Disconnects the current buffer                                                                                                                                   |
-| `s`     | `switch_database()`            | Prompts, then switches to a database that is on the currently connected server                                                                                   |
-| `d`     | `new_default_query()`          | Look for the connection called "default", prompt to choose a database in that server, connect to that database and open a new buffer for querying (very useful!) |
-| `r`     | `refresh_intellisense_cache()` | Rebuild the intellisense cache                                                                                                                                   |
-| `e`     | `edit_connections()`           | Open the [connections file](#connections-json-file) for editing                                                                                                  |
+| Key map | Function                       | Description                                                                                                                                                                       |
+| ------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `n`     | `new_query()`                  | Open a new buffer for sql queries                                                                                                                                                 |
+| `c`     | `connect()`                    | Connect the current buffer (you'll be prompted to choose a connection)                                                                                                            |
+| `x`     | `execute_query()`              | Execute the selection, or the whole buffer                                                                                                                                        |
+| `q`     | `disconnect()`                 | Disconnects the current buffer                                                                                                                                                    |
+| `s`     | `switch_database()`            | Prompts, then switches to a database that is on the currently connected server                                                                                                    |
+| `d`     | `new_default_query()`          | Opens a new query and connects to the connection called `default` in your `connections.json`. Useful when combined with the `promptForDatabase` option in the `connections.json`. |
+| `r`     | `refresh_intellisense_cache()` | Rebuild the intellisense cache                                                                                                                                                    |
+| `e`     | `edit_connections()`           | Open the [connections file](#connections-json-file) for editing                                                                                                                   |
 
 ## Connections json file
 
@@ -152,15 +152,19 @@ The format is `"connection name": connection object`. Eg:
   "Connection B": {
     "server": "AnotherServer",
     "database": "dbB",
-    "authenticationType": "Integrated"
-  },
-  "Connection C": {
-    "connectionString": "Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;"
+    "authenticationType": "Integrated",
+    "promptForDatabase": true
   }
 }
 ```
 
-[Full details of the connections json here](docs/Connections-Json.md).
+Each connection object takes
+[standard connection properties](docs/Connections-Json.md). On top of those, you
+can also provide these useful properties:
+
+| Property            | Type   | Description                                                          |
+| ------------------- | ------ | -------------------------------------------------------------------- |
+| `promptForDatabase` | `bool` | After connecting to the server, select which database to connect to. |
 
 ## Options
 

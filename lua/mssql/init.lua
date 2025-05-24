@@ -344,7 +344,11 @@ local function new_default_query_async(opts)
 
 	query_manager.connect_async(connectParams)
 
-	switch_database_async(buf)
+	if connection.promptForDatabase then
+		switch_database_async(buf)
+	else
+		utils.log_info("Connected")
+	end
 end
 
 local M = {
