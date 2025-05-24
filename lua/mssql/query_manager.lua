@@ -38,7 +38,7 @@ return {
 					error("Error in connecting: " .. err.message, 0)
 				elseif result and result.errorMessage then
 					state = states.Disconnected
-					error("Error in connecting: " .. result.errorMessage)
+					error("Error in connecting: " .. result.errorMessage, 0)
 				end
 
 				state = states.Connected

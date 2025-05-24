@@ -291,6 +291,10 @@ local connect_async = function(opts, query_manager)
 
 	local con = json[con_name]
 
+	if con.promptForPassword then
+		con.password = vim.fn.inputsecret("password for " .. (con.server or ""))
+	end
+
 	local connectParams = {
 		connection = {
 			options = con,
@@ -334,6 +338,10 @@ local function new_default_query_async(opts)
 	local query_manager = vim.b[buf].query_manager
 	if not query_manager then
 		error("CRITICAL: Lsp attached without query manager")
+	end
+
+	if connection.promptForPassword then
+		connection.password = vim.fn.inputsecret("password for " .. (connection.server or ""))
 	end
 
 	local connectParams = {

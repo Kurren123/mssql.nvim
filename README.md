@@ -162,9 +162,10 @@ Each connection object takes
 [standard connection properties](docs/Connections-Json.md). On top of those, you
 can also provide these useful properties:
 
-| Property            | Type   | Description                                                          |
-| ------------------- | ------ | -------------------------------------------------------------------- |
-| `promptForDatabase` | `bool` | After connecting to the server, select which database to connect to. |
+| Property            | Type   | Description                                                                       |
+| ------------------- | ------ | --------------------------------------------------------------------------------- |
+| `promptForDatabase` | `bool` | After connecting to the server, select which database to connect to.              |
+| `promptForPassword` | `bool` | Ask for the password each time you connect instead of storing it in the json file |
 
 ## Options
 
