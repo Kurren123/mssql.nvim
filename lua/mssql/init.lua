@@ -239,42 +239,6 @@ local function get_connections(opts)
 	return json
 end
 
-local connect_async = function(opts, query_manager)
-	local json = get_connections(opts)
-	if not json then
-		edit_connections(opts)
-		return
-	end
-
-	local con = utils.ui_select_async(vim.tbl_keys(json), { prompt = "Choose connection" })
-	if not con then
-		utils.log_info("No connection chosen")
-		return
-	end
-
-	local connectParams = {
-		connection = {
-			options = json[con],
-		},
-	}
-
-	query_manager.connect_async(connectParams)
-	utils.log_info("Connected")
-end
-
-local function new_query_async()
-	-- The langauge server requires all files to have a file name.
-	-- Vscode names new files "untitled-1" etc so we'll do the same
-	vim.cmd("enew")
-	local buf = vim.api.nvim_get_current_buf()
-	vim.cmd("file untitled-" .. buf .. ".sql")
-	vim.cmd("setfiletype sql")
-	vim.b[buf].is_temp_name = true
-
-	local client = wait_for_on_attach_async(buf, 10000)
-	return buf, client
-end
-
 local function switch_database_async(buf)
 	if buf == nil then
 		buf = vim.api.nvim_get_current_buf()
@@ -310,6 +274,49 @@ local function switch_database_async(buf)
 
 	query_manager.connect_async(connect_params)
 	utils.log_info("Connected")
+end
+
+local connect_async = function(opts, query_manager)
+	local json = get_connections(opts)
+	if not json then
+		edit_connections(opts)
+		return
+	end
+
+	local con_name = utils.ui_select_async(vim.tbl_keys(json), { prompt = "Choose connection" })
+	if not con_name then
+		utils.log_info("No connection chosen")
+		return
+	end
+
+	local con = json[con_name]
+
+	local connectParams = {
+		connection = {
+			options = con,
+		},
+	}
+
+	query_manager.connect_async(connectParams)
+
+	if con.promptForDatabase then
+		switch_database_async()
+	else
+		utils.log_info("Connected")
+	end
+end
+
+local function new_query_async()
+	-- The langauge server requires all files to have a file name.
+	-- Vscode names new files "untitled-1" etc so we'll do the same
+	vim.cmd("enew")
+	local buf = vim.api.nvim_get_current_buf()
+	vim.cmd("file untitled-" .. buf .. ".sql")
+	vim.cmd("setfiletype sql")
+	vim.b[buf].is_temp_name = true
+
+	local client = wait_for_on_attach_async(buf, 10000)
+	return buf, client
 end
 
 local function new_default_query_async(opts)
