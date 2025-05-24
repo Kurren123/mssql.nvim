@@ -170,6 +170,8 @@ local function setup_async(opts)
 		max_column_width = 100,
 		keymap_prefix = nil,
 		lsp_settings = nil,
+		results_buffer_extension = "md",
+		results_buffer_filetype = "markdown",
 	}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 

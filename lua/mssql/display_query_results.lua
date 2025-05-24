@@ -86,11 +86,13 @@ end
 
 local result_buffers = {}
 
-local function display_markdown(lines, buffer_name)
+local function display_markdown(lines, buffer_name, filetype)
 	local bufnr = vim.api.nvim_create_buf(true, false)
 	table.insert(result_buffers, bufnr)
 	vim.api.nvim_buf_set_name(bufnr, buffer_name)
-	vim.bo[bufnr].filetype = "markdown"
+	if filetype and filetype ~= "" then
+		vim.bo[bufnr].filetype = filetype
+	end
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 	vim.api.nvim_set_option_value("buftype", "nofile", { buf = bufnr })
 	vim.api.nvim_set_option_value("bufhidden", "hide", { buf = bufnr })
@@ -126,7 +128,7 @@ local function get_rows(subset_params)
 	end
 end
 
-local function show_result_set_async(column_info, subset_params, max_width)
+local function show_result_set_async(column_info, subset_params, opts)
 	local column_headers = vim.iter(column_info)
 		:map(function(i)
 			return i.columnName
@@ -134,10 +136,17 @@ local function show_result_set_async(column_info, subset_params, max_width)
 		:totable()
 
 	local rows = get_rows(subset_params)
-	local lines = pretty_print(column_headers, rows, max_width)
+	local lines = pretty_print(column_headers, rows, opts.max_column_width)
+	local extension = opts.results_buffer_extension
+	extension = extension or ""
+	if extension ~= "" then
+		extension = "." .. extension
+	end
+
 	display_markdown(
 		lines,
-		"results " .. subset_params.batchIndex + 1 .. "-" .. subset_params.resultSetIndex + 1 .. ".md"
+		"results " .. subset_params.batchIndex + 1 .. "-" .. subset_params.resultSetIndex + 1 .. extension,
+		opts.results_buffer_filetype
 	)
 end
 
@@ -162,7 +171,7 @@ local function display_query_results(opts, result)
 				-- fetch and show all results at once
 				vim.schedule(function()
 					utils.try_resume(coroutine.create(function()
-						show_result_set_async(result_set_summary.columnInfo, subset_params, opts.max_column_width)
+						show_result_set_async(result_set_summary.columnInfo, subset_params, opts)
 					end))
 				end)
 			end

@@ -187,14 +187,16 @@ require("mssql").setup({
 end)
 ```
 
-| Option             | Type      | Description                                                                                                                                                       | Default                          |
-| ------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `max_rows`         | `int?`    | Max rows to return for queries. Needed so that large results don't crash neovim.                                                                                  | `100`                            |
-| `max_column_width` | `int?`    | If a result row has a field text length larger than this it will be truncated when displayed                                                                      | `100`                            |
-| `lsp_settings`     | `table`   | Settings passed to the mssql language server. [More info](docs/Lsp-Settings.md)                                                                                   | [See here](docs/Lsp-Settings.md) |
-| `data_dir`         | `string?` | Directory to store download tools and internal config options                                                                                                     | `vim.fn.stdpath("data")`         |
-| `tools_file`       | `string?` | Path to an existing [SQL tools service](https://github.com/microsoft/sqltoolsservice/releases) binary. If `nil`, then the binary is auto downloaded to `data_dir` | `nil`                            |
-| `connections_file` | `string?` | Path to a json [connections file](#connections-json-file)                                                                                                         | `<data_dir>/connections.json`    |
+| Option                     | Type      | Description                                                                                                                                                       | Default                          |
+| -------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `max_rows`                 | `int?`    | Max rows to return for queries. Needed so that large results don't crash neovim.                                                                                  | `100`                            |
+| `max_column_width`         | `int?`    | If a result row has a field text length larger than this it will be truncated when displayed                                                                      | `100`                            |
+| `lsp_settings`             | `table`   | Settings passed to the mssql language server. [More info](docs/Lsp-Settings.md)                                                                                   | [See here](docs/Lsp-Settings.md) |
+| `data_dir`                 | `string?` | Directory to store download tools and internal config options                                                                                                     | `vim.fn.stdpath("data")`         |
+| `tools_file`               | `string?` | Path to an existing [SQL tools service](https://github.com/microsoft/sqltoolsservice/releases) binary. If `nil`, then the binary is auto downloaded to `data_dir` | `nil`                            |
+| `connections_file`         | `string?` | Path to a json [connections file](#connections-json-file)                                                                                                         | `<data_dir>/connections.json`    |
+| `results_buffer_extension` | `string?` | The file extension of buffers that show query results                                                                                                             | `"md"`                           |
+| `results_buffer_filetype`  | `string?` | The filetype (used in neovim to determine the language) of buffers that show query results. Set this to `""` to disable markdown rendering.                       | `"markdown"`                     |
 
 ### Notes
 
