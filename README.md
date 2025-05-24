@@ -208,14 +208,3 @@ end)
 - `setup()` runs asynchronously as it may take some time to first download and
   extract the sql tools. Pass a callback as the second argument if you need to
   run code after initialization.
-
-## Roadmap
-
-- Save queries as csv/excel
-- Backup/restore databases (something I use in SSMS a lot)
-- Object explorer
-
-Long term:
-
-- Tree sitter
-- Formatter
