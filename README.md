@@ -95,7 +95,7 @@ require("mssql").setup()
 
 ### Keymaps
 
-Choose a prefix, eg `<leader>m`. Then after setup:
+Choose a prefix, eg `<leader>m`. Then after setup, in your `keymaps` file:
 
 ```lua
 require("mssql").set_keymaps("<leader>m")
