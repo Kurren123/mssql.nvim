@@ -91,20 +91,29 @@ require("paq")({
 
 ```lua
 require("mssql").setup()
--- then in your keymaps file with a prefix of your choice:
-require("mssql").set_keymaps("<leader>d")
 ```
 
-Pass in a prefix to `set_keymaps` to have all keymaps set up with that prefix
-first. In the above example, new query would be `<leader>dn`. If you have
-which-key installed, then the prefix you provide will be a which-key group.
+### Keymaps
+
+Choose a prefix, eg `<leader>m`. Then after setup:
+
+```lua
+require("mssql").set_keymaps("<leader>m")
+```
+
+**Note:** Make sure your prefix doesn't clash with any existing
+keymaps/which-key groups!
+
+All mssql keymaps are set up with the prefix first. In the above example, new
+query would be `<leader>mn`. If you have which-key installed, then the prefix
+you provide will be a which-key group.
 
 ### Lualine
 
 Insert `require("mssql").lualine_component` into a lualine section (eg
 `lualine_c`).
 
-Eg in lazyvim this would be:
+Eg lazyvim:
 
 ```lua
 return {
@@ -113,6 +122,23 @@ return {
   opts = function(_, opts)
     table.insert(opts.sections.lualine_c, require("mssql").lualine_component)
     return opts
+  end,
+}
+```
+
+Or Lazy.nvim (without lazyvim):
+
+```lua
+return {
+  "nvim-lualine/lualine.nvim",
+  dependencies = { "Kurren123/mssql.nvim" },
+  opts = {
+      sections = {
+        lualine_c = {
+          require('mssql').lualine_component,
+        },
+      },
+    }
   end,
 }
 ```
