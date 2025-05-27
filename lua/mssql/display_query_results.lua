@@ -102,32 +102,6 @@ local function display_markdown(lines, buffer_name, filetype)
 	vim.api.nvim_set_current_buf(bufnr)
 end
 
-local function get_rows(subset_params)
-	if not (subset_params and subset_params.rowsCount and subset_params.rowsCount > 0) then
-		return {}
-	end
-
-	local client = utils.get_lsp_client(subset_params.ownerUri)
-	if subset_params then
-		local result, err = utils.lsp_request_async(client, "query/subset", subset_params)
-		if err then
-			error("Error getting rows: " .. vim.inspect(err), 0)
-		elseif not result then
-			error("Error getting rows", 0)
-		end
-
-		return vim.iter(result.resultSubset.rows)
-			:map(function(cells)
-				return vim.iter(cells)
-					:map(function(cell)
-						return cell.displayValue
-					end)
-					:totable()
-			end)
-			:totable()
-	end
-end
-
 local function show_result_set_async(column_info, subset_params, opts)
 	local column_headers = vim.iter(column_info)
 		:map(function(i)
@@ -135,7 +109,7 @@ local function show_result_set_async(column_info, subset_params, opts)
 		end)
 		:totable()
 
-	local rows = get_rows(subset_params)
+	local rows = utils.get_rows_async(subset_params)
 	local lines = pretty_print(column_headers, rows, opts.max_column_width)
 	local extension = opts.results_buffer_extension
 	extension = extension or ""

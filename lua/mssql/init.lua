@@ -359,6 +359,10 @@ local function new_default_query_async(opts)
 	end
 end
 
+local function backup_database_async(query_manager)
+	query_manager.execute_async("Select 1")
+end
+
 local M = {
 	new_query = function()
 		utils.try_resume(coroutine.create(function()
@@ -474,6 +478,17 @@ local M = {
 			return vim.b.query_manager ~= nil
 		end,
 	},
+
+	backup_database = function()
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query first.")
+			return
+		end
+		utils.try_resume(coroutine.create(function()
+			backup_database_async(query_manager)
+		end))
+	end,
 }
 
 M.set_keymaps = function(prefix)
