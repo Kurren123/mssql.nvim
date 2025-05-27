@@ -138,8 +138,7 @@ return {
           require('mssql').lualine_component,
         },
       },
-    }
-  end,
+    },
 }
 ```
 
