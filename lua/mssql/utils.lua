@@ -93,6 +93,33 @@ local lsp_request_async = function(client, method, params)
 	end)
 	return coroutine.yield()
 end
+
+local function get_rows_async(subset_params)
+	if not (subset_params and subset_params.rowsCount and subset_params.rowsCount > 0) then
+		return {}
+	end
+
+	local client = get_lsp_client(subset_params.ownerUri)
+	if subset_params then
+		local result, err = lsp_request_async(client, "query/subset", subset_params)
+		if err then
+			error("Error getting rows: " .. vim.inspect(err), 0)
+		elseif not result then
+			error("Error getting rows", 0)
+		end
+
+		return vim.iter(result.resultSubset.rows)
+			:map(function(cells)
+				return vim.iter(cells)
+					:map(function(cell)
+						return cell.displayValue
+					end)
+					:totable()
+			end)
+			:totable()
+	end
+end
+
 return {
 	contains = contains,
 	wait_for_schedule_async = wait_for_schedule_async,
@@ -190,46 +217,36 @@ return {
 	lsp_file_uri = lsp_file_uri,
 
 	-- gets rows from the lsp given some subset parameters
-	get_rows_async = function(subset_params)
-		if not (subset_params and subset_params.rowsCount and subset_params.rowsCount > 0) then
-			return {}
-		end
-
-		local client = get_lsp_client(subset_params.ownerUri)
-		if subset_params then
-			local result, err = lsp_request_async(client, "query/subset", subset_params)
-			if err then
-				error("Error getting rows: " .. vim.inspect(err), 0)
-			elseif not result then
-				error("Error getting rows", 0)
-			end
-
-			return vim.iter(result.resultSubset.rows)
-				:map(function(cells)
-					return vim.iter(cells)
-						:map(function(cell)
-							return cell.displayValue
-						end)
-						:totable()
-				end)
-				:totable()
-		end
-	end,
+	get_rows_async = get_rows_async,
 
 	--- Executes a query and returns all the results in the first batch and result set as a table of rows
-	get_query_result_async = function(result)
-		local result_set_summary = result.batchSummaries[1].resultSetSummaries[1]
+	get_query_result_async = function(query_result_summary)
 		local subset_params = {
-			ownerUri = result.ownerUri,
+			ownerUri = query_result_summary.ownerUri,
 			batchIndex = 0,
 			resultSetIndex = 0,
 			rowsStartIndex = 0,
-			rowsCount = result_set_summary.rowCount,
+			rowsCount = query_result_summary.batchSummaries[1].resultSetSummaries[1].rowCount,
 		}
-		-- fetch and show all results at once
+
 		wait_for_schedule_async()
 
-		-- todo: get results using get_rows_async, then iterate through
-		-- and convert to a list of records using result_set_summary.columnInfo for the property names
+		local rows = get_rows_async(subset_params)
+		local columnNames = vim.iter(query_result_summary.batchSummaries[1].resultSetSummaries[1].columnInfo)
+			:map(function(ci)
+				return ci.columnName
+			end)
+			:totable()
+		local result = {}
+
+		for _, row in pairs(rows) do
+			local item = {}
+			for index, _ in ipairs(columnNames) do
+				item[columnNames[index]] = row[index]
+			end
+			table.insert(result, item)
+		end
+
+		return result
 	end,
 }

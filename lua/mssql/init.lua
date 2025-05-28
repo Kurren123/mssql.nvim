@@ -359,8 +359,51 @@ local function new_default_query_async(opts)
 	end
 end
 
+local function new_buffer_same_connection(connect_params)
+	local buf = new_query_async()
+	local query_manager = vim.b[buf].query_manager
+	if not query_manager then
+		error("CRITICAL: Lsp attached without query manager")
+	end
+
+	query_manager.connect_async(connect_params)
+	return buf
+end
+
 local function backup_database_async(query_manager)
-	query_manager.execute_async("Select 1")
+	if query_manager.get_state() ~= query_manager_module.states.Connected then
+		error("Connect to a database first", 0)
+	end
+	local connect_params = query_manager.get_connect_params()
+	if
+		not (
+			connect_params
+			and connect_params.connection
+			and connect_params.connection.options
+			and connect_params.connection.options.database
+		)
+	then
+		error("No connection found", 0)
+	end
+	local database = connect_params.connection.options.database
+	local dir = vim.fs.joinpath(vim.fn.getcwd(), database .. ".bak")
+	local query = string.format(
+		[[BACKUP DATABASE [%s]
+-- Change to your backup location
+TO DISK = N'%s'
+WITH 
+INIT, -- Remove if not overwriting
+STATS = 25]],
+		database,
+		dir
+	)
+
+	local bufnr = 0
+	if vim.trim(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false))) ~= "" then
+		bufnr = new_buffer_same_connection(connect_params)
+	end
+
+	vim.api.nvim_buf_set_lines(bufnr, 0, 0, false, vim.split(query, "\n"))
 end
 
 local M = {
