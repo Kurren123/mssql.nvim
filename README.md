@@ -29,10 +29,13 @@ rendering
 
 ![results screenshot](./docs/screenshots/Results.png)
 
-Optional which-key integration, showing only the key maps which are possible (eg
-don't show `Connect` if we are already connected)
+User commands and optional which-key integration, showing only the key
+maps/commands which are possible (eg don't show `Connect` if we are already
+connected)
 
 <img src="./docs/screenshots/Which-key.png" alt="Which key screenshot" width="300"/>
+
+<img src="./docs/screenshots/UserCommands.png" alt="User commands screenshot" width="400"/>
 
 Lualine integration
 
@@ -142,23 +145,25 @@ return {
 }
 ```
 
-You can also use the `lualine_component` in other status lines.
+You can also use the `lualine_component` in other status lines or
+[customise your own](https://github.com/Kurren123/mssql.nvim/issues/56#issuecomment-2912516957).
 
 ## Usage
 
-You can call the following as key maps typing your [prefix](#setup) first, or as
-functions on `require("mssql")`.
+You can call the following as key maps typing your [prefix](#setup) first, as
+user commands by doing `:MSSQL <command>` or as functions on `require("mssql")`.
 
-| Key map | Function                       | Description                                                                                                                                                                       |
-| ------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `n`     | `new_query()`                  | Open a new buffer for sql queries                                                                                                                                                 |
-| `c`     | `connect()`                    | Connect the current buffer (you'll be prompted to choose a connection)                                                                                                            |
-| `x`     | `execute_query()`              | Execute the selection, or the whole buffer                                                                                                                                        |
-| `q`     | `disconnect()`                 | Disconnects the current buffer                                                                                                                                                    |
-| `s`     | `switch_database()`            | Prompts, then switches to a database that is on the currently connected server                                                                                                    |
-| `d`     | `new_default_query()`          | Opens a new query and connects to the connection called `default` in your `connections.json`. Useful when combined with the `promptForDatabase` option in the `connections.json`. |
-| `r`     | `refresh_intellisense_cache()` | Rebuild the intellisense cache                                                                                                                                                    |
-| `e`     | `edit_connections()`           | Open the [connections file](#connections-json-file) for editing                                                                                                                   |
+| Key Map | User Command          | Function                       | Description                                                                                                                                                                       |
+| ------- | --------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `n`     | `NewQuery`            | `new_query()`                  | Open a new buffer for sql queries                                                                                                                                                 |
+| `c`     | `Connect`             | `connect()`                    | Connect the current buffer (you'll be prompted to choose a connection)                                                                                                            |
+| `x`     | `ExecuteQuery`        | `execute_query()`              | Execute the selection, or the whole buffer                                                                                                                                        |
+| `q`     | `Disconnect`          | `disconnect()`                 | Disconnects the current buffer                                                                                                                                                    |
+| `s`     | `SwitchDatabase`      | `switch_database()`            | Prompts, then switches to a database that is on the currently connected server                                                                                                    |
+| `d`     | `NewDefaultQuery`     | `new_default_query()`          | Opens a new query and connects to the connection called `default` in your `connections.json`. Useful when combined with the `promptForDatabase` option in the `connections.json`. |
+| `r`     | `RefreshIntellisense` | `refresh_intellisense_cache()` | Rebuild the intellisense cache                                                                                                                                                    |
+| `e`     | `EditConnections`     | `edit_connections()`           | Open the [connections file](#connections-json-file) for editing                                                                                                                   |
+|         | `BackupDatabase`      | `backup_database()`            | Inserts an SQL command to back up the currently connected database                                                                                                                |
 
 ## Connections json file
 

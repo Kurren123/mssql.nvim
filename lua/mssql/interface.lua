@@ -164,6 +164,7 @@ return {
 					"ExecuteQuery",
 					"Disconnect",
 					"SwitchDatabase",
+					"BackupDatabase",
 				}
 			elseif state == states.Disconnected then
 				return {
