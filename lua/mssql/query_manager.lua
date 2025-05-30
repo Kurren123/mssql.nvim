@@ -27,7 +27,7 @@ return {
 	-- interacts with sql server while maintaining a state
 	create_query_manager = function(bufnr, client)
 		local state = new_state()
-		local last_connect_params
+		local last_connect_params = {}
 
 		return {
 			-- the owner uri gets added to the connect_params
@@ -65,7 +65,7 @@ return {
 				end
 				utils.lsp_request_async(client, "connection/disconnect", { ownerUri = utils.lsp_file_uri(bufnr) })
 				state.set_state(states.Disconnected)
-				last_connect_params = nil
+				last_connect_params = {}
 			end,
 
 			execute_async = function(query)
