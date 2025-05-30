@@ -41,6 +41,10 @@ Lualine integration
 
 <img src="./docs/screenshots/Lualine.png" alt="Which key screenshot" width="600"/>
 
+Other cherries on top:
+
+- Backup to/restore from `.bak` files
+
 ## Installation
 
 Requires Neovim v0.11.0 or later.
@@ -164,6 +168,7 @@ user commands by doing `:MSSQL <command>` or as functions on `require("mssql")`.
 | `r`     | `RefreshIntellisense` | `refresh_intellisense_cache()` | Rebuild the intellisense cache                                                                                                                                                    |
 | `e`     | `EditConnections`     | `edit_connections()`           | Open the [connections file](#connections-json-file) for editing                                                                                                                   |
 |         | `BackupDatabase`      | `backup_database()`            | Inserts an SQL command to back up the currently connected database                                                                                                                |
+|         | `RestoreDatabase`     | `restore_database()`           | Prompts for a `.bak` file, then inserts an SQL command to restore the database from that file                                                                                     |
 
 ## Connections json file
 
