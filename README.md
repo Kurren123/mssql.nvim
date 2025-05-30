@@ -115,8 +115,10 @@ All mssql keymaps are set up with the prefix first. In the above example, new
 query would be `<leader>mn`. If you have which-key installed, then the prefix
 you provide will be a which-key group.
 
-### Lualine
+### Status lines
 
+<details>
+<summary>Lualine</summary>
 Insert `require("mssql").lualine_component` into a lualine section (eg
 `lualine_c`).
 
@@ -149,8 +151,39 @@ return {
 }
 ```
 
-You can also use the `lualine_component` in other status lines or
-[customise your own](https://github.com/Kurren123/mssql.nvim/issues/56#issuecomment-2912516957).
+</details>
+
+<details>
+<summary>Other status lines (eg heirline)</summary>
+You can also use `require('mssql').lualine_component` in other status lines or
+[customise your own](https://github.com/Kurren123/mssql.nvim/issues/56#issuecomment-2912516957). It's a table with the following:
+
+```lua
+{
+  [1] = function()
+        -- returns a string of the status
+        end,
+  cond = function()
+         -- returns a bool, of whether to show this status line
+         end
+}
+```
+
+So eg a [heirline](https://github.com/rebelot/heirline.nvim) component would
+look like:
+
+```lua
+local lualine_component = require("mssql").lualine_component
+local mssql_heirline_component = {
+ provider = lualine_component[1],
+ condition = lualine_component.cond,
+}
+```
+
+`mssql.nvim` calls `vim.cmd("redrawstatus")` whenever the status changes, so you
+don't need to worry about refreshing
+
+</details>
 
 ## Usage
 
