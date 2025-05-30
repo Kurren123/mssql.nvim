@@ -133,7 +133,7 @@ local function display_query_results(opts, result)
 	end
 
 	for batch_index, batch_summary in ipairs(result.batchSummaries) do
-		if batch_summary.resultSetSummaries then
+		if not batch_summary.hasError and batch_summary.resultSetSummaries then
 			for result_set_index, result_set_summary in ipairs(batch_summary.resultSetSummaries) do
 				local subset_params = {
 					ownerUri = result.ownerUri,

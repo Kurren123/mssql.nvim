@@ -82,7 +82,7 @@ return {
 				if err then
 					error("Could not execute query: " .. vim.inspect(err), 0)
 				elseif not (result or result.batchSummaries) then
-					error("Could not execute query: no results returned" .. vim.inspect(err), 0)
+					error("Could not execute query: no results returned", 0)
 				end
 				return result
 			end,

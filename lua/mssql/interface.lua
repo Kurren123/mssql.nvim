@@ -128,6 +128,7 @@ return {
 			Connect = M.connect,
 			Disconnect = M.disconnect,
 			BackupDatabase = M.backup_database,
+			RestoreDatabase = M.restore_database,
 			ExecuteQuery = M.execute_query,
 			RefreshIntellisense = M.refresh_intellisense_cache,
 			EditConnections = M.edit_connections,
@@ -165,6 +166,7 @@ return {
 					"Disconnect",
 					"SwitchDatabase",
 					"BackupDatabase",
+					"RestoreDatabase",
 				}
 			elseif state == states.Disconnected then
 				return {

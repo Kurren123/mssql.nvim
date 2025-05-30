@@ -221,6 +221,10 @@ return {
 
 	--- Executes a query and returns all the results in the first batch and result set as a table of rows
 	get_query_result_async = function(query_result_summary)
+		if query_result_summary.batchSummaries[1].hasError then
+			error("Query thew an error", 0)
+		end
+
 		local subset_params = {
 			ownerUri = query_result_summary.ownerUri,
 			batchIndex = 0,

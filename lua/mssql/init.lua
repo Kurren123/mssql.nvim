@@ -360,15 +360,23 @@ local function new_default_query_async(opts)
 	end
 end
 
-local function new_buffer_same_connection(connect_params)
-	local buf = new_query_async()
-	local query_manager = vim.b[buf].query_manager
-	if not query_manager then
-		error("CRITICAL: Lsp attached without query manager")
+--- If the current buffer is empty, put the query into this buffer. Otherwise,
+--- Open a new buffer with the same connection and put the query there
+local function insert_query_into_buffer(query)
+	if vim.trim(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false))) == "" then
+		vim.api.nvim_buf_set_lines(0, 0, 0, false, vim.split(query, "\n"))
+		return
 	end
 
+	local query_manager = vim.b.query_manager
+	if not query_manager then
+		error("Connect to a database first", 0)
+	end
+
+	local connect_params = query_manager.get_connect_params()
+	local buf = new_query_async()
 	query_manager.connect_async(connect_params)
-	return buf
+	vim.api.nvim_buf_set_lines(buf, 0, 0, false, vim.split(query, "\n"))
 end
 
 local function backup_database_async(query_manager)
@@ -399,12 +407,68 @@ STATS = 25]],
 		dir
 	)
 
-	local bufnr = 0
-	if vim.trim(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false))) ~= "" then
-		bufnr = new_buffer_same_connection(connect_params)
+	insert_query_into_buffer(query)
+end
+
+local function restore_database_async(query_manager)
+	if query_manager.get_state() ~= query_manager_module.states.Connected then
+		error("Connect to a server first", 0)
 	end
 
-	vim.api.nvim_buf_set_lines(bufnr, 0, 0, false, vim.split(query, "\n"))
+	local file = vim.fn.input("Enter .bak file path:", "", "file")
+	if not file or file == "" then
+		error("No file chosen", 0)
+	end
+
+	local internal_files =
+		utils.get_query_result_async(query_manager.execute_async("RESTORE FILELISTONLY FROM DISK = '" .. file .. "'"))
+
+	local headers =
+		utils.get_query_result_async(query_manager.execute_async("RESTORE HEADERONLY FROM DISK = '" .. file .. "'"))[1]
+
+	local database = headers.DatabaseName
+
+	local size = tonumber(headers.BackupSize)
+	local stats = 25
+	if size <= 2000000000 then -- <= 2GB
+		stats = 25
+	else
+		stats = 10
+	end
+
+	local data_path = utils.get_query_result_async(
+		query_manager.execute_async("SELECT SERVERPROPERTY('InstanceDefaultDataPath') AS DefaultDataPath")
+	)[1].DefaultDataPath
+
+	local moves = vim.iter(internal_files)
+		:map(function(file)
+			return "MOVE N'"
+				.. file.LogicalName
+				.. "' TO N'"
+				.. vim.fs.joinpath(data_path, vim.fs.basename(file.PhysicalName))
+				.. "',"
+		end)
+		:join("\n")
+
+	local query = string.format(
+		[[-- WARNING: Read and understand this before executing!
+USE [master]
+ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE -- drop connections
+RESTORE DATABASE [%s] FROM  DISK = N'%s' WITH
+FILE = 1,
+%s
+REPLACE, -- overwrite existing
+STATS = %s
+ALTER DATABASE [%s] SET MULTI_USER]],
+		database,
+		database,
+		file,
+		moves,
+		stats,
+		database
+	)
+
+	insert_query_into_buffer(query)
 end
 
 local M = {
@@ -517,11 +581,22 @@ local M = {
 	backup_database = function()
 		local query_manager = vim.b.query_manager
 		if not query_manager then
-			utils.log_error("No mssql lsp is attached. Create a new query first.")
+			utils.log_error("No mssql lsp is attached. Create a new query or open an existing one.")
 			return
 		end
 		utils.try_resume(coroutine.create(function()
 			backup_database_async(query_manager)
+		end))
+	end,
+
+	restore_database = function()
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query or open an existing one.")
+			return
+		end
+		utils.try_resume(coroutine.create(function()
+			restore_database_async(query_manager)
 		end))
 	end,
 }
