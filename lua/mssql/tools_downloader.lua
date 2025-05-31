@@ -6,17 +6,17 @@ local M = {}
 M.get_tools_download_url = function()
 	local urls = {
 		Windows = {
-			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-win-arm64-net8.0.zip",
-			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-win-x64-net8.0.zip",
-			x86 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-win-x86-net8.0.zip",
+			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250530.2/Microsoft.SqlTools.ServiceLayer-win-arm64-net8.0.zip",
+			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250530.2/Microsoft.SqlTools.ServiceLayer-win-x64-net8.0.zip",
+			x86 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250530.2/Microsoft.SqlTools.ServiceLayer-win-x86-net8.0.zip",
 		},
 		Linux = {
-			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-linux-arm64-net8.0.tar.gz",
-			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-linux-x64-net8.0.tar.gz",
+			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250530.2/Microsoft.SqlTools.ServiceLayer-linux-arm64-net8.0.tar.gz",
+			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250530.2/Microsoft.SqlTools.ServiceLayer-linux-x64-net8.0.tar.gz",
 		},
 		OSX = {
-			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-osx-arm64-net8.0.tar.gz",
-			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250408.3/Microsoft.SqlTools.ServiceLayer-osx-x64-net8.0.tar.gz",
+			arm64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250530.2/Microsoft.SqlTools.ServiceLayer-osx-arm64-net8.0.tar.gz",
+			x64 = "https://github.com/microsoft/sqltoolsservice/releases/download/5.0.20250530.2/Microsoft.SqlTools.ServiceLayer-osx-x64-net8.0.tar.gz",
 		},
 	}
 
