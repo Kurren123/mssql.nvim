@@ -503,6 +503,57 @@ local function connect_to_default(query_manager, opts)
 	end
 end
 
+local function save_query_results_async(result_info)
+	utils.wait_for_schedule_async()
+	local success, lsp_client = pcall(utils.get_lsp_client, result_info.subset_params.ownerUri)
+	if not success then
+		error("The buffer with the sql query has been closed, can't save query results")
+	end
+
+	local file = vim.fn.input("Save query results (.csv/.json/.xls/.xlsx/.xml)", "", "file")
+	if not file or file == "" then
+		utils.log_error("No file path given")
+		return
+	end
+
+	local params = {
+		FilePath = file,
+		BatchIndex = result_info.subset_params.batchIndex,
+		ResultSetIndex = result_info.subset_params.resultSetIndex,
+		OwnerUri = result_info.subset_params.ownerUri,
+	}
+
+	local method
+	local openAfterSave = true
+	if file:match("%.csv$") then
+		method = "query/saveCsv"
+	elseif file:match("%.json$") then
+		method = "query/saveJson"
+	elseif file:match("%.xml$") then
+		method = "query/saveXml"
+	elseif file:match("%.xls$") or file:match("%.xlsx$") then
+		method = "query/saveExcel"
+		openAfterSave = false
+	else
+		utils.log_error("File extension not recognised. Enter a file with extension .csv/.json/.xls/.xlsx/.xml")
+		return
+	end
+
+	local _, err = utils.lsp_request_async(lsp_client, method, params)
+
+	if err then
+		utils.log_error("Error saving query results")
+		utils.log_error(vim.inspect(err))
+		return
+	end
+
+	utils.log_info("File saved")
+
+	if openAfterSave then
+		vim.cmd("edit " .. file)
+	end
+end
+
 local M = {
 	new_query = function()
 		utils.try_resume(coroutine.create(function()
@@ -636,8 +687,14 @@ local M = {
 	end,
 
 	save_query_results = function()
-		utils.log_info("saving query results")
-		utils.log_info(vim.inspect(vim.b.query_result_info))
+		local result_info = vim.b.query_result_info
+		if not result_info then
+			utils.log_error("Go to a query result buffer to save results")
+			return
+		end
+		utils.try_resume(coroutine.create(function()
+			save_query_results_async(result_info)
+		end))
 	end,
 }
 
