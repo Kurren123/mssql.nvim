@@ -86,13 +86,17 @@ end
 
 local result_buffers = {}
 
-local function display_markdown(lines, buffer_name, filetype)
+local function create_buffer(name, filetype)
 	local bufnr = vim.api.nvim_create_buf(true, false)
 	table.insert(result_buffers, bufnr)
-	vim.api.nvim_buf_set_name(bufnr, buffer_name)
+	vim.api.nvim_buf_set_name(bufnr, name)
 	if filetype and filetype ~= "" then
 		vim.bo[bufnr].filetype = filetype
 	end
+	return bufnr
+end
+
+local function display_markdown(lines, bufnr)
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 	vim.api.nvim_set_option_value("buftype", "nofile", { buf = bufnr })
 	vim.api.nvim_set_option_value("bufhidden", "hide", { buf = bufnr })
@@ -117,11 +121,12 @@ local function show_result_set_async(column_info, subset_params, opts)
 		extension = "." .. extension
 	end
 
-	display_markdown(
-		lines,
+	local buf = create_buffer(
 		"results " .. subset_params.batchIndex + 1 .. "-" .. subset_params.resultSetIndex + 1 .. extension,
 		opts.results_buffer_filetype
 	)
+	vim.b[buf].query_result_info = { subset_params = subset_params }
+	display_markdown(lines, buf)
 end
 
 local function display_query_results(opts, result)

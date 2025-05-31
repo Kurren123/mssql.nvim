@@ -19,13 +19,6 @@ return {
 				mode = { "n", "v" },
 				icon = { icon = "", color = "green" },
 			},
-			execute_on_default = {
-				"x",
-				M.execute_query,
-				desc = "Execute On Default",
-				mode = { "n", "v" },
-				icon = { icon = "", color = "green" },
-			},
 			edit_connections = {
 				"e",
 				M.edit_connections,
@@ -44,12 +37,6 @@ return {
 				desc = "New Default Query",
 				icon = { icon = "", color = "yellow" },
 			},
-			switch_database = {
-				"s",
-				M.switch_database,
-				desc = "Switch Database",
-				icon = { icon = "", color = "yellow" },
-			},
 		}
 
 		local success, wk = pcall(require, "which-key")
@@ -63,41 +50,61 @@ return {
 			local normal_group = vim.tbl_deep_extend("keep", wkeygroup, {})
 			normal_group.expand = function()
 				local qm = vim.b.query_manager
-				if not qm then
-					return { keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
-				end
+				if qm then
+					local state = qm.get_state()
+					local states = query_manager_module.states
+					if state == states.Connecting or state == states.Executing then
+						return {
+							keymaps.new_query,
+							keymaps.new_default_query,
+							keymaps.edit_connections,
+							keymaps.refresh_intellisense,
+						}
+					elseif state == states.Connected then
+						return {
+							keymaps.new_query,
+							keymaps.new_default_query,
+							keymaps.edit_connections,
+							keymaps.refresh_intellisense,
+							keymaps.execute_query,
+							keymaps.disconnect,
+							{
+								"s",
+								M.switch_database,
+								desc = "Switch Database",
+								icon = { icon = "", color = "yellow" },
+							},
+						}
+					elseif state == states.Disconnected then
+						return {
+							keymaps.new_query,
+							keymaps.new_default_query,
+							keymaps.edit_connections,
+							keymaps.refresh_intellisense,
+							keymaps.connect,
+							{
+								"x",
+								M.execute_query,
+								desc = "Execute On Default",
+								mode = { "n", "v" },
+								icon = { icon = "", color = "green" },
+							},
+						}
+					else
+						utils.log_error("Entered unrecognised query state: " .. state)
+						return {}
+					end
+				elseif vim.b.query_result_info then
+					local save_result = {
+						"s",
+						M.save_query_results,
+						desc = "Save Query Results",
+						icon = { icon = "", color = "green" },
+					}
 
-				local state = qm.get_state()
-				local states = query_manager_module.states
-				if state == states.Connecting or state == states.Executing then
-					return {
-						keymaps.new_query,
-						keymaps.new_default_query,
-						keymaps.edit_connections,
-						keymaps.refresh_intellisense,
-					}
-				elseif state == states.Connected then
-					return {
-						keymaps.new_query,
-						keymaps.new_default_query,
-						keymaps.edit_connections,
-						keymaps.refresh_intellisense,
-						keymaps.execute_query,
-						keymaps.disconnect,
-						keymaps.switch_database,
-					}
-				elseif state == states.Disconnected then
-					return {
-						keymaps.new_query,
-						keymaps.new_default_query,
-						keymaps.edit_connections,
-						keymaps.refresh_intellisense,
-						keymaps.connect,
-						keymaps.execute_on_default,
-					}
+					return { save_result, keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
 				else
-					utils.log_error("Entered unrecognised query state: " .. state)
-					return {}
+					return { keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
 				end
 			end
 
@@ -128,6 +135,13 @@ return {
 			for _, m in pairs(keymaps) do
 				vim.keymap.set(m.mode or "n", prefix .. m[1], m[2], { desc = m.desc })
 			end
+			vim.keymap.set("n", prefix .. "s", function()
+				if vim.b.query_result_info then
+					M.save_query_results()
+				else
+					M.switch_database()
+				end
+			end)
 		end
 	end,
 

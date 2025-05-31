@@ -479,6 +479,7 @@ local function connect_to_default(query_manager, opts)
 	if not (connections and connections.default) then
 		utils.log_info("Add a connection called 'default'")
 		edit_connections(opts)
+		return
 	end
 
 	local connection = connections.default
@@ -632,6 +633,11 @@ local M = {
 		utils.try_resume(coroutine.create(function()
 			restore_database_async(query_manager)
 		end))
+	end,
+
+	save_query_results = function()
+		utils.log_info("saving query results")
+		utils.log_info(vim.inspect(vim.b.query_result_info))
 	end,
 }
 
