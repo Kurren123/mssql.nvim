@@ -43,6 +43,7 @@ Lualine integration
 
 Other cherries on top:
 
+- Save query results to csv, json, Excel and xml
 - Backup to/restore from `.bak` files
 - Basic TSQL formatting
 
@@ -226,6 +227,7 @@ You can call the following as key maps typing your
 | `q`     | `Disconnect`          | `disconnect()`                 | Disconnects the current buffer                                                                                                                                                    |
 | `s`     | `SwitchDatabase`      | `switch_database()`            | Prompts, then switches to a database that is on the currently connected server                                                                                                    |
 | `d`     | `NewDefaultQuery`     | `new_default_query()`          | Opens a new query and connects to the connection called `default` in your `connections.json`. Useful when combined with the `promptForDatabase` option in the `connections.json`. |
+| `s`     | `SaveQueryResults`    | `save_query_results()`         | When in a query result buffer, save the query result by giving a file path with an extension of `.csv`, `.json`, `.xml`, `.xlsx` or `.xls`                                        |
 | `r`     | `RefreshIntellisense` | `refresh_intellisense_cache()` | Rebuild the intellisense cache                                                                                                                                                    |
 | `e`     | `EditConnections`     | `edit_connections()`           | Open the [connections file](#connections-json-file) for editing                                                                                                                   |
 |         | `BackupDatabase`      | `backup_database()`            | Inserts an SQL command to back up the currently connected database                                                                                                                |
