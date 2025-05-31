@@ -521,6 +521,8 @@ local function save_query_results_async(result_info)
 		BatchIndex = result_info.subset_params.batchIndex,
 		ResultSetIndex = result_info.subset_params.resultSetIndex,
 		OwnerUri = result_info.subset_params.ownerUri,
+		IncludeHeaders = true,
+		Formatted = true,
 	}
 
 	local method
