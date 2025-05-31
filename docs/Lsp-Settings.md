@@ -6,8 +6,7 @@ These are the default settings used by the LSP, taken from the language server
 > [!WARNING]  
 > Not all features have yet been implmented in in this plugin. All documented
 > options that the LSP will accept are below, however many of them will have no
-> effect when using this plugin. Particularly formatting and object explorer
-> settings.
+> effect when using this plugin. Particularly the object explorer settings.
 
 ```lua
 return {
@@ -38,6 +37,8 @@ return {
   --- Maximum number of characters to store in temp file for XML columns
   maxXmlCharsToStore = 2097152,
 
+  --- NOTE: This plugin does not show execution plans yet so
+  --- these options will have no effect!
   --- Options for returning execution plans when executing queries
   executionPlanOptions = {
    --- Setting to return the actual execution plan as XML
@@ -97,8 +98,6 @@ return {
   isAlwaysEncryptedParameterizationEnabled = false,
  },
 
- --- NOTE: Formatting is not implemented in this plugin yet, so the following
- --- options will have no effect!
  format = {
   --- Should names be escaped, for example converting dbo.T1 to [dbo].[T1]
   useBracketForIdentifiers = false,

@@ -3,6 +3,7 @@ local utils = require("mssql.utils")
 local display_query_results = require("mssql.display_query_results")
 local query_manager_module = require("mssql.query_manager")
 local interface = require("mssql.interface")
+local default_opts = require("mssql.default_opts")
 
 local joinpath = vim.fs.joinpath
 
@@ -139,7 +140,7 @@ local function wait_for_on_attach_async(bufnr_to_watch, timeout)
 	return coroutine.yield()
 end
 
-local function set_auto_commands()
+local function set_auto_commands(opts)
 	vim.api.nvim_create_augroup("AutoNameSQL", { clear = true })
 
 	-- Reset the buffer to the file name upon saving
@@ -156,26 +157,26 @@ local function set_auto_commands()
 			end
 		end,
 	})
+
+	if opts.sql_buffer_options and opts.sql_buffer_options ~= {} then
+		vim.api.nvim_create_autocmd("FileType", {
+			pattern = "sql",
+			callback = function()
+				-- copy all properties
+				for k, v in pairs(opts.sql_buffer_options) do
+					vim.bo[k] = v
+				end
+			end,
+		})
+	end
 end
 
 local plugin_opts
 
 local function setup_async(opts)
 	opts = opts or {}
-	local data_dir = opts.data_dir or joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", "")
-	local default_opts = {
-		data_dir = data_dir,
-		tools_file = nil,
-		connections_file = joinpath(data_dir, "connections.json"),
-		max_rows = 100,
-		max_column_width = 100,
-		keymap_prefix = nil,
-		lsp_settings = nil,
-		results_buffer_extension = "md",
-		results_buffer_filetype = "markdown",
-	}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
-
+	opts.connections_file = joinpath(opts.data_dir, "connections.json")
 	make_directory(opts.data_dir)
 
 	-- if the opts specify a tools file path, don't download.
@@ -199,7 +200,7 @@ local function setup_async(opts)
 	end
 
 	enable_lsp(opts)
-	set_auto_commands()
+	set_auto_commands(opts)
 
 	plugin_opts = opts
 end
