@@ -609,6 +609,7 @@ M.setup = function(opts, callback)
 	utils.try_resume(coroutine.create(function()
 		setup_async(opts)
 		interface.set_user_commands(M)
+		interface.set_keymaps(opts.keymap_prefix, M)
 		if callback ~= nil then
 			callback()
 		end

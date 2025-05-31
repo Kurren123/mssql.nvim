@@ -45,9 +45,12 @@ Other cherries on top:
 
 - Backup to/restore from `.bak` files
 
-## Installation
+## Installation and setup
 
 Requires Neovim v0.11.0 or later.
+
+For keymaps, choose a prefix, eg `<leader>m`. Make sure it doesn't clash with
+any existing keymaps/which-key groups!
 
 <details>
 <summary>lazy.nvim</summary>
@@ -55,8 +58,11 @@ Requires Neovim v0.11.0 or later.
 ```lua
 {
   "Kurren123/mssql.nvim",
-  opts = {},
-  -- optional. You also need to call set_keymaps (see below)
+  opts = {
+    -- optional
+    keymap_prefix = "<leader>m"
+  },
+  -- optional
   dependencies = { "folke/which-key.nvim" }
 }
 ```
@@ -70,10 +76,10 @@ Requires Neovim v0.11.0 or later.
 require("packer").startup(function()
   use({
     "Kurren123/mssql.nvim",
-    -- optional. You also need to call set_keymaps (see below)
+    -- optional
     requires = { 'folke/which-key.nvim' },
     config = function()
-      require("mssql").setup()
+      require("mssql").setup({ keymap_prefix = "<leader>m" })
     end,
   })
 end)
@@ -86,39 +92,42 @@ end)
 
 ```lua
 require("paq")({
-  { "stevearc/conform.nvim" },
-  -- optional. You also need to call set_keymaps (see below)
-  { "folke/which-key.nvim" }
+  "savq/paq-nvim",
+  "Kurren123/mssql.nvim",
+  -- optional
+  "folke/which-key.nvim",
+})
+
+require("mssql").setup({
+  -- optional
+  keymap_prefix = "<leader>m",
 })
 ```
 
 </details>
 
-## Setup
+<details>
+<summary>No package manager</summary>
+
+Clone this repo, then:
 
 ```lua
-require("mssql").setup()
+-- Prepend plugin root to runtimepath
+vim.opt.rtp:prepend("/path/to/mssql.nvim/")
+require("mssql").setup({
+  -- optional
+  keymap_prefix = "<leader>m",
+})
 ```
 
-### Keymaps
-
-Choose a prefix, eg `<leader>m`. Then after setup, in your `keymaps` file:
-
-```lua
-require("mssql").set_keymaps("<leader>m")
-```
-
-**Note:** Make sure your prefix doesn't clash with any existing
-keymaps/which-key groups!
+</details>
 
 All mssql keymaps are set up with the prefix first. In the above example, new
 query would be `<leader>mn`. If you have which-key installed, then the prefix
 you provide will be a which-key group.
 
-### Status lines
+### Lualine
 
-<details>
-<summary>Lualine</summary>
 Insert `require("mssql").lualine_component` into a lualine section (eg
 `lualine_c`).
 
@@ -153,10 +162,12 @@ return {
 
 </details>
 
-<details>
-<summary>Other status lines (eg heirline)</summary>
+### Other status lines (eg heirline)
+
 You can also use `require('mssql').lualine_component` in other status lines or
-[customise your own](https://github.com/Kurren123/mssql.nvim/issues/56#issuecomment-2912516957). It's a table with the following:
+customise your own (see
+<https://github.com/Kurren123/mssql.nvim/issues/56#issuecomment-2912516957>).
+It's a table with the following:
 
 ```lua
 {
@@ -183,12 +194,28 @@ local mssql_heirline_component = {
 `mssql.nvim` calls `vim.cmd("redrawstatus")` whenever the status changes, so you
 don't need to worry about refreshing
 
-</details>
+### Using a keymap that gets overridden later (eg lazyvim)
+
+Lazyvim sets its keymaps after loading the `mssql` plugin. If you want to use a
+keymap that lazyvim already uses:
+
+1. Call `setup()` without a `keymap_prefix`
+2. In your `keymaps.lua` file, delete the lazyvim keymaps then call
+   `set_keymaps`. Eg:
+
+   ```lua
+   -- delete lua profiler keymaps first
+   safe_delete("n", "<leader>dpp")
+   safe_delete("n", "<leader>dph")
+   safe_delete("n", "<leader>dps")
+   require("mssql").set_keymaps("<leader>d")
+   ```
 
 ## Usage
 
-You can call the following as key maps typing your [prefix](#setup) first, as
-user commands by doing `:MSSQL <command>` or as functions on `require("mssql")`.
+You can call the following as key maps typing your
+[prefix](#installation-and-setup) first, as user commands by doing
+`:MSSQL <command>` or as functions on `require("mssql")`.
 
 | Key Map | User Command          | Function                       | Description                                                                                                                                                                       |
 | ------- | --------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
