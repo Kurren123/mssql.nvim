@@ -472,6 +472,36 @@ ALTER DATABASE [%s] SET MULTI_USER]],
 	insert_query_into_buffer(query)
 end
 
+local function connect_to_default(query_manager, opts)
+	utils.wait_for_schedule_async()
+
+	local connections = get_connections(opts)
+	if not (connections and connections.default) then
+		utils.log_info("Add a connection called 'default'")
+		edit_connections(opts)
+	end
+
+	local connection = connections.default
+
+	if connection.promptForPassword then
+		connection.password = vim.fn.inputsecret("password for " .. (connection.server or ""))
+	end
+
+	local connectParams = {
+		connection = {
+			options = connection,
+		},
+	}
+
+	query_manager.connect_async(connectParams)
+
+	if connection.promptForDatabase then
+		switch_database_async()
+	else
+		utils.log_info("Connected")
+	end
+end
+
 local M = {
 	new_query = function()
 		utils.try_resume(coroutine.create(function()
@@ -542,6 +572,9 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			local query = utils.get_selected_text()
+			if query_manager.get_state() == query_manager_module.states.Disconnected then
+				connect_to_default(query_manager, plugin_opts)
+			end
 			local result = query_manager.execute_async(query)
 			display_query_results(plugin_opts, result)
 		end))

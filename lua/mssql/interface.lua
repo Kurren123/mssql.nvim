@@ -1,4 +1,4 @@
--- Handles how the user user interfaces with this plugin, i.e. keymaps and autocommands
+-- Handles how the user user interfaces with this plugin, i.e. keymaps and user commands
 local query_manager_module = require("mssql.query_manager")
 local utils = require("mssql.utils")
 
@@ -16,6 +16,13 @@ return {
 				"x",
 				M.execute_query,
 				desc = "Execute Query",
+				mode = { "n", "v" },
+				icon = { icon = "", color = "green" },
+			},
+			execute_on_default = {
+				"x",
+				M.execute_query,
+				desc = "Execute On Default",
 				mode = { "n", "v" },
 				icon = { icon = "", color = "green" },
 			},
@@ -86,6 +93,7 @@ return {
 						keymaps.edit_connections,
 						keymaps.refresh_intellisense,
 						keymaps.connect,
+						keymaps.execute_on_default,
 					}
 				else
 					utils.log_error("Entered unrecognised query state: " .. state)
