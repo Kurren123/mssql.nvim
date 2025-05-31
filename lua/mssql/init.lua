@@ -176,7 +176,7 @@ local plugin_opts
 local function setup_async(opts)
 	opts = opts or {}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
-	opts.connections_file = joinpath(opts.data_dir, "connections.json")
+	opts.connections_file = opts.connections_file or joinpath(opts.data_dir, "connections.json")
 	make_directory(opts.data_dir)
 
 	-- if the opts specify a tools file path, don't download.

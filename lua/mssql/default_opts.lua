@@ -21,6 +21,10 @@ return {
 	-- Directory to store download tools and internal config options
 	data_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", ""),
 
+	-- Path to a json connections file (see https://github.com/Kurren123/mssql.nvim?tab=readme-ov-file#connections-json-file)
+	-- If nil, it's stored in the data_dir
+	connections_file = nil,
+
 	-- Path to an existing SQL tools service binary (see https://github.com/microsoft/sqltoolsservice/releases).
 	-- If nil, then the binary is auto downloaded to data_dir
 	tools_file = nil,
