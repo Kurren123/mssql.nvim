@@ -157,11 +157,19 @@ return {
 			SwitchDatabase = M.switch_database,
 			NewQuery = M.new_query,
 			NewDefaultQuery = M.new_default_query,
+			SaveQueryResults = M.save_query_results,
 		}
 
 		local complete = function(_, _, _)
 			local qm = vim.b.query_manager
-			if not qm then
+			if vim.b.query_result_info then
+				return {
+					"NewQuery",
+					"NewDefaultQuery",
+					"EditConnections",
+					"SaveQueryResults",
+				}
+			elseif not qm then
 				return {
 					"NewQuery",
 					"NewDefaultQuery",
