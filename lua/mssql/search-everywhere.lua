@@ -31,8 +31,7 @@ picker.pick({
 
 local utils = require("mssql.utils")
 
----Waits for the lsp to call the given method, with optional timeout.
----Must be run inside a coroutine. Ignores any owner uri.
+---Same as utils.wait_for_notification_async but ignores any owner uri
 ---@param client vim.lsp.Client
 ---@param method string
 ---@param timeout integer
