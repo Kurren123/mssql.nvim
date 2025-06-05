@@ -48,9 +48,11 @@ local wait_for_notification_async = function(client, method, timeout)
 			existing_handler(err, result, ctx)
 		end
 
-		vim.lsp.handlers[method] = existing_handler
-		resumed = true
-		utils.try_resume(this, result, err)
+		if not resumed then
+			resumed = true
+			vim.lsp.handlers[method] = existing_handler
+			utils.try_resume(this, result, err)
+		end
 		return result, err
 	end
 
@@ -84,6 +86,7 @@ get_session = function()
 		utils.lsp_request_async(client, "objectexplorer/createsession", params)
 		local response, err = wait_for_notification_async(client, "objectexplorer/sessioncreated", 10000)
 		utils.safe_assert(not err, vim.inspect(err))
+		r = response
 		return response
 	end))
 end
@@ -91,11 +94,12 @@ end
 expand = function(path)
 	utils.try_resume(coroutine.create(function()
 		local client = vim.b.query_manager.get_lsp_client()
-		utils.lsp_request_async(client, "objectexplorer/expand", {
+		local x, y = utils.lsp_request_async(client, "objectexplorer/expand", {
 			sessionId = ".__NULL_Integrated_3AE169C4-E7DF-495F-98F0-2A75C692A8BB_applicationName:vscode-mssql_encrypt:Mandatory_id:3AE169C4-E7DF-495F-98F0-2A75C692A8BB_trustServerCertificate:true",
 			nodePath = "./Security/Server Roles",
 		})
+		vim.notify(vim.inspect({ "expand start", x, y }))
 		local response, err = wait_for_notification_async(client, "objectexplorer/expandCompleted", 10000)
-		vim.notify(vim.inspect({ response, err }))
+		vim.notify(vim.inspect({ "expand complete", response, err }))
 	end))
 end
