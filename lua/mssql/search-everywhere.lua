@@ -41,14 +41,15 @@ local utils = require("mssql.utils")
 ---@return lsp.ResponseError? error
 local wait_for_notification_async = function(client, method, timeout)
 	local this = coroutine.running()
+	local resumed = false
 	local existing_handler = client.handlers[method]
 	client.handlers[method] = function(err, result, ctx)
 		if existing_handler then
-			vim.notify("abc")
 			existing_handler(err, result, ctx)
 		end
 
 		vim.lsp.handlers[method] = existing_handler
+		resumed = true
 		utils.try_resume(this, result, err)
 		return result, err
 	end
@@ -83,8 +84,6 @@ get_session = function()
 		utils.lsp_request_async(client, "objectexplorer/createsession", params)
 		local response, err = wait_for_notification_async(client, "objectexplorer/sessioncreated", 10000)
 		utils.safe_assert(not err, vim.inspect(err))
-		vim.notify(vim.inspect(response))
-		r = response
 		return response
 	end))
 end
