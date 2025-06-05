@@ -28,6 +28,27 @@ return {
 	create_query_manager = function(bufnr, client)
 		local state = new_state()
 		local last_connect_params = {}
+		local owner_uri = utils.lsp_file_uri(bufnr)
+
+		local existing_handler = client.handlers["connection/connectionchanged"]
+		client.handlers["connection/connectionchanged"] = function(err, result, ctx)
+			if existing_handler then
+				existing_handler(err, result, ctx)
+			end
+
+			if not (result and result.ownerUri == owner_uri and result.connection) then
+				return
+			end
+			last_connect_params = vim.tbl_deep_extend("force", last_connect_params, {
+				connection = {
+					options = {
+						user = result.connection.userName,
+						database = result.connection.databaseName,
+						server = result.connection.serverName,
+					},
+				},
+			})
+		end
 
 		return {
 			-- the owner uri gets added to the connect_params
@@ -36,7 +57,7 @@ return {
 					error("You are currently " .. state.get_state(), 0)
 				end
 
-				connect_params.ownerUri = utils.lsp_file_uri(bufnr)
+				connect_params.ownerUri = owner_uri
 				state.set_state(states.Connecting)
 
 				local result, err
@@ -63,7 +84,7 @@ return {
 				if state.get_state() ~= states.Connected then
 					error("You are currently " .. state.get_state(), 0)
 				end
-				utils.lsp_request_async(client, "connection/disconnect", { ownerUri = utils.lsp_file_uri(bufnr) })
+				utils.lsp_request_async(client, "connection/disconnect", { ownerUri = owner_uri })
 				state.set_state(states.Disconnected)
 				last_connect_params = {}
 			end,
@@ -74,11 +95,8 @@ return {
 				end
 				state.set_state(states.Executing)
 
-				local result, err = utils.lsp_request_async(
-					client,
-					"query/executeString",
-					{ query = query, ownerUri = utils.lsp_file_uri(bufnr) }
-				)
+				local result, err =
+					utils.lsp_request_async(client, "query/executeString", { query = query, ownerUri = owner_uri })
 
 				if err then
 					state.set_state(states.Connected)
