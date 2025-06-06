@@ -91,6 +91,20 @@ get_session = function()
 	end))
 end
 
+--[[
+--NOTE: 
+--The basic tree structure is the same across all sql servers, defined in SmoTreeNodesDefinition.xml. 
+--So hopefully we can query all eg tables directly without expanding the root nodes first. 
+--In VSCode you can filter the objects by name, which sends a query to the lsp. 
+--
+--So figure out how to wait for a delay when the user types a search term into snacks.picker, 
+--delete the current items from snacks picker,
+--and also how to cancel an existing expand node request. 
+--
+--Then we can wait for eg 1 second after typing, cancel any existing expand node request and send a new one. When the reqonse comes, 
+--delete all existing items if the old items are from the previous query.
+--]]
+
 expand = function(path)
 	utils.try_resume(coroutine.create(function()
 		local client = vim.b.query_manager.get_lsp_client()
