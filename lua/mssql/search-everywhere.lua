@@ -86,7 +86,11 @@ get_session = function()
 		utils.lsp_request_async(client, "objectexplorer/createsession", params)
 		local response, err = wait_for_notification_async(client, "objectexplorer/sessioncreated", 10000)
 		utils.safe_assert(not err, vim.inspect(err))
+		vim.notify(vim.inspect())
 		r = response
+		-- now expand with nodePath = ./database
+		-- or if there is no database then just "."
+		-- This is what vscode does
 		return response
 	end))
 end
@@ -95,25 +99,25 @@ end
 --NOTE: 
 --The basic tree structure is the same across all sql servers, defined in SmoTreeNodesDefinition.xml. 
 --So hopefully we can query all eg tables directly without expanding the root nodes first. 
---In VSCode you can filter the objects by name, which sends a query to the lsp. 
 --
---So figure out how to wait for a delay when the user types a search term into snacks.picker, 
---delete the current items from snacks picker,
---and also how to cancel an existing expand node request. 
+--The search everywhere plugin caches results the first time search is opened. We can do the same thing: cache results on 
+--connect, have a user command to refresh the search cache.
 --
---Then we can wait for eg 1 second after typing, cancel any existing expand node request and send a new one. When the reqonse comes, 
---delete all existing items if the old items are from the previous query.
+--If the user tries to search while the cache is still running:
+--Show an error telling them to wait until the search is ready. Then when it's ready show a notification. Don't 
+--Show a notification if this didn't happen
 --]]
 
-expand = function(path)
+expand = function(path, sessionId)
 	utils.try_resume(coroutine.create(function()
 		local client = vim.b.query_manager.get_lsp_client()
 		local x, y = utils.lsp_request_async(client, "objectexplorer/expand", {
-			sessionId = ".__NULL_Integrated_3AE169C4-E7DF-495F-98F0-2A75C692A8BB_applicationName:vscode-mssql_encrypt:Mandatory_id:3AE169C4-E7DF-495F-98F0-2A75C692A8BB_trustServerCertificate:true",
-			nodePath = "./Security/Server Roles",
+			sessionId = sessionId,
+			nodePath = path,
 		})
 		vim.notify(vim.inspect({ "expand start", x, y }))
 		local response, err = wait_for_notification_async(client, "objectexplorer/expandCompleted", 10000)
 		vim.notify(vim.inspect({ "expand complete", response, err }))
+		er = response
 	end))
 end
