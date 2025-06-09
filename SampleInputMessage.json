@@ -1,0 +1,74 @@
+[
+  {
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "objectexplorer/getsessionid",
+    "params": {
+      "options": {
+        "id": "A3E83733-6997-4198-99A5-C3BE6E24EEC0",
+        "server": "localhost",
+        "database": "CreditControlTest",
+        "databaseDisplayName": "CreditControlTest",
+        "password": "",
+        "authenticationType": "Integrated",
+        "encrypt": "Mandatory",
+        "trustServerCertificate": true,
+        "connectTimeout": 15,
+        "commandTimeout": 30,
+        "applicationName": "vscode-mssql"
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "objectexplorer/createsession",
+    "params": {
+      "options": {
+        "id": "A3E83733-6997-4198-99A5-C3BE6E24EEC0",
+        "server": "localhost",
+        "database": "CreditControlTest",
+        "databaseDisplayName": "CreditControlTest",
+        "password": "",
+        "authenticationType": "Integrated",
+        "encrypt": "Mandatory",
+        "trustServerCertificate": true,
+        "connectTimeout": 15,
+        "commandTimeout": 30,
+        "applicationName": "vscode-mssql"
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 5,
+    "method": "connection/connect",
+    "params": {
+      "ownerUri": "localhost_CreditControlTest_NULL_Integrated_A3E83733-6997-4198-99A5-C3BE6E24EEC0_CreditControlTest_applicationName:vscode-mssql_encrypt:Mandatory_id:A3E83733-6997-4198-99A5-C3BE6E24EEC0_trustServerCertificate:true",
+      "connection": {
+        "options": {
+          "id": "A3E83733-6997-4198-99A5-C3BE6E24EEC0",
+          "server": "localhost",
+          "database": "CreditControlTest",
+          "databaseDisplayName": "CreditControlTest",
+          "password": "",
+          "authenticationType": "Integrated",
+          "encrypt": "Mandatory",
+          "trustServerCertificate": true,
+          "connectTimeout": 15,
+          "commandTimeout": 30,
+          "applicationName": "vscode-mssql"
+        }
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 6,
+    "method": "objectexplorer/expand",
+    "params": {
+      "sessionId": "localhost_CreditControlTest_NULL_Integrated_A3E83733-6997-4198-99A5-C3BE6E24EEC0_CreditControlTest_applicationName:vscode-mssql_encrypt:Mandatory_id:A3E83733-6997-4198-99A5-C3BE6E24EEC0_trustServerCertificate:true",
+      "nodePath": "localhost/CreditControlTest"
+    }
+  }
+]

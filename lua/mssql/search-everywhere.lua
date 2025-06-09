@@ -83,10 +83,15 @@ get_session = function()
 		params.UserName = params.user
 		params.EnclaveAttestationProtocol = params.attestationProtocol
 
+		-- For some reason, if there is no display name set on the connection parameters then
+		-- the language server will treat this as a default/system database:
+		-- https://github.com/microsoft/sqltoolsservice/blob/49036c6196e73c3791bca5d31e97a16afee00772/src/Microsoft.SqlTools.ServiceLayer/ObjectExplorer/ObjectExplorerService.cs#L537
+		params.DatabaseDisplayName = params.DatabaseDisplayName or params.database
+
 		utils.lsp_request_async(client, "objectexplorer/createsession", params)
 		local response, err = wait_for_notification_async(client, "objectexplorer/sessioncreated", 10000)
 		utils.safe_assert(not err, vim.inspect(err))
-		vim.notify(vim.inspect())
+		vim.notify(vim.inspect(response))
 		r = response
 		-- now expand with nodePath = ./database
 		-- or if there is no database then just "."
@@ -107,6 +112,21 @@ end
 --Show an error telling them to wait until the search is ready. Then when it's ready show a notification. Don't 
 --Show a notification if this didn't happen
 --]]
+local nodeTypes = {
+	AggregateFunctionPartitionFunction = "alter",
+	ScalarValuedFunction = "alter",
+	StoredProcedure = "alter",
+	TableValuedFunction = "alter",
+	Table = "select",
+	View = "select",
+}
+
+cache = {}
+
+setup = function()
+	local client = vim.b.query_manager.get_lsp_client()
+	client.handlers["objectexplorer/expandCompleted"] = function(err, result, ctx) end
+end
 
 expand = function(path, sessionId)
 	utils.try_resume(coroutine.create(function()
