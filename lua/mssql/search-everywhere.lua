@@ -1,36 +1,3 @@
-local picker = require("snacks").picker
-
-local pick = function()
-	picker.pick({
-		title = "test",
-		layout = "select",
-		finder = function(config, ctx)
-			return function(emit)
-				vim.defer_fn(function()
-					emit({ icon = "", text = "table" })
-					ctx.async:resume()
-				end, 2000)
-				emit({ icon = "󰡱", text = "stored procedure" })
-				emit({ icon = "󱂬", text = "view" })
-				ctx.async:suspend()
-			end
-		end,
-		format = function(item)
-			return {
-				{ item.icon, "SnacksPickerIcon" },
-				{ " " },
-				{ "path here", "SnacksPickerComment" },
-				{ " " },
-				{ item.text },
-			}
-		end,
-		confirm = function(picker, item)
-			picker:close()
-			vim.notify(vim.inspect(item))
-		end,
-	})
-end
-
 local utils = require("mssql.utils")
 
 ---Same as utils.wait_for_notification_async but ignores any owner uri
@@ -97,15 +64,8 @@ end
 
 --[[
 --NOTE: 
---The basic tree structure is the same across all sql servers, defined in SmoTreeNodesDefinition.xml. 
---So hopefully we can query all eg tables directly without expanding the root nodes first. 
---
 --The search everywhere plugin caches results the first time search is opened. We can do the same thing: cache results on 
 --connect, have a user command to refresh the search cache.
---
---If the user tries to search while the cache is still running:
---Show an error telling them to wait until the search is ready. Then when it's ready show a notification. Don't 
---Show a notification if this didn't happen
 --]]
 local nodeTypes = {
 	AggregateFunctionPartitionFunction = "alter",
@@ -119,13 +79,15 @@ local nodeTypes = {
 local expand_count = 0
 
 local expand = function(sessionId, path)
-	expand_count = expand_count + 1
-	local client = vim.b.query_manager.get_lsp_client()
-	client:request("objectexplorer/expand", {
-		sessionId = sessionId,
-		nodePath = path,
-	}, function(err, result, _, _)
-		return result, err
+	vim.schedule(function()
+		expand_count = expand_count + 1
+		local client = vim.b.query_manager.get_lsp_client()
+		client:request("objectexplorer/expand", {
+			sessionId = sessionId,
+			nodePath = path,
+		}, function(err, result, _, _)
+			return result, err
+		end)
 	end)
 end
 
@@ -149,11 +111,18 @@ local expand_complete = function(err, result, ctx)
 
 	expand_count = expand_count - 1
 	if expand_count == 0 then
-		vim.notify("Finished caching")
-		vim.notify(#cache)
+		-- disconnect when we've finished caching
+		local client = vim.b.query_manager.get_lsp_client()
+		client:request("objectExplorer/closeSession", {
+			sessionId = session_id,
+		}, function(err, result, _, _)
+			session_id = nil
+			return result, err
+		end)
 	end
 end
 
+local root_path = ""
 refresh_cache = function()
 	cache = {}
 	local client = vim.b.query_manager.get_lsp_client()
@@ -168,6 +137,42 @@ refresh_cache = function()
 		utils.safe_assert(session and session.sessionId, "Could not create a session")
 
 		session_id = session.sessionId
+		root_path = session.rootNode.nodePath
 		expand(session.sessionId, session.rootNode.nodePath)
 	end))
+end
+
+-- Picker
+local picker_icons = {
+	AggregateFunctionPartitionFunction = "󰡱",
+	ScalarValuedFunction = "󰡱",
+	StoredProcedure = "󰯁",
+	TableValuedFunction = "󰡱",
+	Table = "",
+	View = "󱂬",
+}
+
+local picker = require("snacks").picker
+find = function()
+	picker.pick({
+		title = "Find",
+		layout = "select",
+		items = cache,
+		format = function(item)
+			local path = item.parentNodePath
+			path = string.sub(path, #root_path + 2, #path) .. "/"
+			return {
+				{ picker_icons[item.nodeType], "SnacksPickerIcon" },
+				{ " " },
+				{ path, "SnacksPickerComment" },
+				{ " " },
+				{ item.label },
+			}
+		end,
+		--TODO: fix searching, and select the item
+		confirm = function(picker, item)
+			picker:close()
+			vim.notify(vim.inspect(item))
+		end,
+	})
 end
