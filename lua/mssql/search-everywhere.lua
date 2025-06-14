@@ -73,34 +73,26 @@ local wait_for_notification_async = function(client, method, timeout)
 	return coroutine.yield()
 end
 
-local sessionId
+local session_id
 
-get_session = function()
-	utils.try_resume(coroutine.create(function()
-		local client = vim.b.query_manager.get_lsp_client()
+local get_session = function()
+	local client = vim.b.query_manager.get_lsp_client()
 
-		local params = vim.b.query_manager.get_connect_params().connection.options
-		params.ServerName = params.server
-		params.DatabaseName = params.database
-		params.UserName = params.user
-		params.EnclaveAttestationProtocol = params.attestationProtocol
+	local params = vim.b.query_manager.get_connect_params().connection.options
+	params.ServerName = params.server
+	params.DatabaseName = params.database
+	params.UserName = params.user
+	params.EnclaveAttestationProtocol = params.attestationProtocol
 
-		-- For some reason, if there is no display name set on the connection parameters then
-		-- the language server will treat this as a default/system database:
-		-- https://github.com/microsoft/sqltoolsservice/blob/49036c6196e73c3791bca5d31e97a16afee00772/src/Microsoft.SqlTools.ServiceLayer/ObjectExplorer/ObjectExplorerService.cs#L537
-		params.DatabaseDisplayName = params.DatabaseDisplayName or params.database
+	-- For some reason, if there is no display name set on the connection parameters then
+	-- the language server will treat this as a default/system database:
+	-- https://github.com/microsoft/sqltoolsservice/blob/49036c6196e73c3791bca5d31e97a16afee00772/src/Microsoft.SqlTools.ServiceLayer/ObjectExplorer/ObjectExplorerService.cs#L537
+	params.DatabaseDisplayName = params.DatabaseDisplayName or params.database
 
-		utils.lsp_request_async(client, "objectexplorer/createsession", params)
-		local response, err = wait_for_notification_async(client, "objectexplorer/sessioncreated", 10000)
-		utils.safe_assert(not err, vim.inspect(err))
-		vim.notify(vim.inspect(response))
-		r = response
-		sessionId = response.sessionId
-		-- now expand with nodePath = ./database
-		-- or if there is no database then just "."
-		-- This is what vscode does
-		return response
-	end))
+	utils.lsp_request_async(client, "objectexplorer/createsession", params)
+	local response, err = wait_for_notification_async(client, "objectexplorer/sessioncreated", 10000)
+	utils.safe_assert(not err, vim.inspect(err))
+	return response
 end
 
 --[[
@@ -124,29 +116,58 @@ local nodeTypes = {
 	View = "select",
 }
 
-expand = function(path, sessionId)
-	utils.try_resume(coroutine.create(function()
-		local client = vim.b.query_manager.get_lsp_client()
-		vim.notify("expanding " .. path)
-		local x, y = utils.lsp_request_async(client, "objectexplorer/expand", {
-			sessionId = sessionId,
-			nodePath = path,
-		})
-	end))
+local expand_count = 0
+
+local expand = function(sessionId, path)
+	expand_count = expand_count + 1
+	local client = vim.b.query_manager.get_lsp_client()
+	client:request("objectexplorer/expand", {
+		sessionId = sessionId,
+		nodePath = path,
+	}, function(err, result, _, _)
+		return result, err
+	end)
 end
 
 cache = {}
 
-setup = function()
-	local client = vim.b.query_manager.get_lsp_client()
-	client.handlers["objectexplorer/expandCompleted"] = function(err, result, ctx)
-		if not result then
-			return
-		end
+local expand_complete = function(err, result, ctx)
+	if not result then
+		return
+	end
 
-		for _, node in pairs(result.nodes) do
-			table:insert(cache, node.nodePath)
-			expand(node.nodePath, sessionId)
+	for _, node in ipairs(result.nodes) do
+		if nodeTypes[node.objectType] then
+			table.insert(cache, node)
+		elseif node.nodePath then
+			expand(session_id, node.nodePath)
+		else
+			vim.notify("no node path")
+			vim.notify(vim.inspect(node))
 		end
 	end
+
+	expand_count = expand_count - 1
+	if expand_count == 0 then
+		vim.notify("Finished caching")
+		vim.notify(#cache)
+	end
+end
+
+refresh_cache = function()
+	cache = {}
+	local client = vim.b.query_manager.get_lsp_client()
+
+	client.handlers["objectexplorer/expandCompleted"] = nil -- delete this
+	if client.handlers["objectexplorer/expandCompleted"] == nil then
+		client.handlers["objectexplorer/expandCompleted"] = expand_complete
+	end
+
+	utils.try_resume(coroutine.create(function()
+		local session = get_session()
+		utils.safe_assert(session and session.sessionId, "Could not create a session")
+
+		session_id = session.sessionId
+		expand(session.sessionId, session.rootNode.nodePath)
+	end))
 end
