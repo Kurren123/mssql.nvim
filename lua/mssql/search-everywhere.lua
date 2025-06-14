@@ -73,6 +73,8 @@ local wait_for_notification_async = function(client, method, timeout)
 	return coroutine.yield()
 end
 
+local sessionId
+
 get_session = function()
 	utils.try_resume(coroutine.create(function()
 		local client = vim.b.query_manager.get_lsp_client()
@@ -93,6 +95,7 @@ get_session = function()
 		utils.safe_assert(not err, vim.inspect(err))
 		vim.notify(vim.inspect(response))
 		r = response
+		sessionId = response.sessionId
 		-- now expand with nodePath = ./database
 		-- or if there is no database then just "."
 		-- This is what vscode does
@@ -121,23 +124,29 @@ local nodeTypes = {
 	View = "select",
 }
 
-cache = {}
-
-setup = function()
-	local client = vim.b.query_manager.get_lsp_client()
-	client.handlers["objectexplorer/expandCompleted"] = function(err, result, ctx) end
-end
-
 expand = function(path, sessionId)
 	utils.try_resume(coroutine.create(function()
 		local client = vim.b.query_manager.get_lsp_client()
+		vim.notify("expanding " .. path)
 		local x, y = utils.lsp_request_async(client, "objectexplorer/expand", {
 			sessionId = sessionId,
 			nodePath = path,
 		})
-		vim.notify(vim.inspect({ "expand start", x, y }))
-		local response, err = wait_for_notification_async(client, "objectexplorer/expandCompleted", 10000)
-		vim.notify(vim.inspect({ "expand complete", response, err }))
-		er = response
 	end))
+end
+
+cache = {}
+
+setup = function()
+	local client = vim.b.query_manager.get_lsp_client()
+	client.handlers["objectexplorer/expandCompleted"] = function(err, result, ctx)
+		if not result then
+			return
+		end
+
+		for _, node in pairs(result.nodes) do
+			table:insert(cache, node.nodePath)
+			expand(node.nodePath, sessionId)
+		end
+	end
 end
