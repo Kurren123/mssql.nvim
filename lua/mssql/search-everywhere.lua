@@ -92,6 +92,7 @@ local expand = function(sessionId, path)
 end
 
 cache = {}
+local root_path = ""
 
 local expand_complete = function(err, result, ctx)
 	if not result then
@@ -100,6 +101,9 @@ local expand_complete = function(err, result, ctx)
 
 	for _, node in ipairs(result.nodes) do
 		if nodeTypes[node.objectType] then
+			local path = node.parentNodePath
+			node.pickerPath = string.sub(path, #root_path + 2, #path) .. "/"
+			node.text = node.pickerPath .. node.label
 			table.insert(cache, node)
 		elseif node.nodePath then
 			expand(session_id, node.nodePath)
@@ -122,7 +126,6 @@ local expand_complete = function(err, result, ctx)
 	end
 end
 
-local root_path = ""
 refresh_cache = function()
 	cache = {}
 	local client = vim.b.query_manager.get_lsp_client()
@@ -159,13 +162,11 @@ find = function()
 		layout = "select",
 		items = cache,
 		format = function(item)
-			local path = item.parentNodePath
-			path = string.sub(path, #root_path + 2, #path) .. "/"
 			return {
 				{ picker_icons[item.nodeType], "SnacksPickerIcon" },
 				{ " " },
-				{ path, "SnacksPickerComment" },
-				{ " " },
+				{ item.pickerPath, "SnacksPickerComment" },
+				-- { " " },
 				{ item.label },
 			}
 		end,
