@@ -634,6 +634,17 @@ local M = {
 		end))
 	end,
 
+	cancel_query = function()
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query or open an existing one.")
+			return
+		end
+		utils.try_resume(coroutine.create(function()
+			query_manager.cancel_async()
+		end))
+	end,
+
 	lualine_component = {
 		function()
 			local qm = vim.b.query_manager
