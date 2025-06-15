@@ -12,6 +12,7 @@ return {
 			new_query = { "n", M.new_query, desc = "New Query", icon = { icon = "", color = "yellow" } },
 			connect = { "c", M.connect, desc = "Connect", icon = { icon = "󱘖", color = "green" } },
 			disconnect = { "q", M.disconnect, desc = "Disconnect", icon = { icon = "", color = "red" } },
+			cancel_query = { "l", M.cancel_query, desc = "Cancel Query", icon = { icon = "", color = "red" } },
 			execute_query = {
 				"x",
 				M.execute_query,
@@ -59,6 +60,7 @@ return {
 							keymaps.new_default_query,
 							keymaps.edit_connections,
 							keymaps.refresh_intellisense,
+							keymaps.cancel_query,
 						}
 					elseif state == states.Connected then
 						return {
@@ -158,6 +160,7 @@ return {
 			NewQuery = M.new_query,
 			NewDefaultQuery = M.new_default_query,
 			SaveQueryResults = M.save_query_results,
+			CancelQuery = M.cancel_query,
 		}
 
 		local complete = function(_, _, _)
@@ -185,6 +188,7 @@ return {
 					"NewDefaultQuery",
 					"EditConnections",
 					"RefreshIntellisense",
+					"CancelQuery",
 				}
 			elseif state == states.Connected then
 				return {

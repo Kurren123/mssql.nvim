@@ -2,6 +2,7 @@ local utils = require("mssql.utils")
 
 local states = {
 	Disconnected = "disconnected",
+	Canceling = "canceling a query",
 	Connecting = "connecting",
 	Connected = "connected",
 	Executing = "executing a query",
@@ -117,6 +118,32 @@ return {
 					error("Could not execute query: no results returned", 0)
 				end
 				return result
+			end,
+
+			cancel_async = function()
+        if state.get_state() ~= states.Executing then
+          error("There is no query being executed in the current buffer")
+        end
+				local result, err = utils.lsp_request_async(client, "query/cancel", { ownerUri = owner_uri })
+
+				if err then
+					state.set_state(states.Executing)
+					error("Error canceling query: " .. err.message, 0)
+				elseif not result then
+					state.set_state(states.Executing)
+					error("Could not cancel query", 0)
+				else
+					utils.log_info("Canceling...")
+				end
+
+				result, err = utils.wait_for_notification_async(bufnr, client, "query/complete", 360000)
+				state.set_state(states.Connected)
+
+				if err then
+					error("Could not cancel query: " .. vim.inspect(err), 0)
+				elseif not (result or result.batchSummaries) then
+					error("Could not cancel query: no results returned", 0)
+				end
 			end,
 
 			get_state = function()
