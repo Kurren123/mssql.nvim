@@ -50,24 +50,24 @@ return {
 
 			local normal_group = vim.tbl_deep_extend("keep", wkeygroup, {})
 			normal_group.expand = function()
+
+				local available_keymaps = {
+					keymaps.new_query,
+					keymaps.new_default_query,
+					keymaps.edit_connections,
+				}
+
 				local qm = vim.b.query_manager
 				if qm then
-					local state = qm.get_state()
+					local current_state = qm.get_state()
 					local states = query_manager_module.states
-					if state == states.Connecting or state == states.Executing then
-						return {
-							keymaps.new_query,
-							keymaps.new_default_query,
-							keymaps.edit_connections,
-							keymaps.refresh_intellisense,
-							keymaps.cancel_query,
-						}
-					elseif state == states.Connected then
-						return {
-							keymaps.new_query,
-							keymaps.new_default_query,
-							keymaps.edit_connections,
-							keymaps.refresh_intellisense,
+
+					table.insert(available_keymaps, keymaps.refresh_intellisense)
+
+					local state_specific_keymaps = {
+						[states.Executing] = { keymaps.cancel_query },
+						[states.Cancelling] = { keymaps.disconnect },
+						[states.Connected] = {
 							keymaps.execute_query,
 							keymaps.disconnect,
 							{
@@ -76,13 +76,8 @@ return {
 								desc = "Switch Database",
 								icon = { icon = "", color = "yellow" },
 							},
-						}
-					elseif state == states.Disconnected then
-						return {
-							keymaps.new_query,
-							keymaps.new_default_query,
-							keymaps.edit_connections,
-							keymaps.refresh_intellisense,
+						},
+						[states.Disconnected] = {
 							keymaps.connect,
 							{
 								"x",
@@ -92,22 +87,27 @@ return {
 								icon = { icon = "", color = "green" },
 							},
 						}
-					else
-						utils.log_error("Entered unrecognised query state: " .. state)
+					}
+
+					local keymaps_for_state = state_specific_keymaps[current_state]
+					if not keymaps_for_state and current_state ~= states.Connecting then
+						utils.log_error("Entered unrecognised query state: " .. current_state)
 						return {}
 					end
+
+					for _, keymap in ipairs(keymaps_for_state or {}) do
+						table.insert(available_keymaps, keymap)
+					end
+
 				elseif vim.b.query_result_info then
-					local save_result = {
+					table.insert(available_keymaps, {
 						"s",
 						M.save_query_results,
 						desc = "Save Query Results",
 						icon = { icon = "", color = "green" },
-					}
-
-					return { save_result, keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
-				else
-					return { keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
+					})
 				end
+				return available_keymaps
 			end
 
 			wk.add(normal_group)
@@ -164,56 +164,47 @@ return {
 		}
 
 		local complete = function(_, _, _)
-			local qm = vim.b.query_manager
-			if vim.b.query_result_info then
-				return {
-					"NewQuery",
-					"NewDefaultQuery",
-					"EditConnections",
-					"SaveQueryResults",
-				}
-			elseif not qm then
-				return {
-					"NewQuery",
-					"NewDefaultQuery",
-					"EditConnections",
-				}
-			end
+			local available_commands = {
+				"NewQuery",
+				"NewDefaultQuery",
+				"EditConnections",
+			}
 
-			local state = qm.get_state()
-			local states = query_manager_module.states
-			if state == states.Connecting or state == states.Executing then
-				return {
-					"NewQuery",
-					"NewDefaultQuery",
-					"EditConnections",
-					"RefreshIntellisense",
-					"CancelQuery",
+			local qm = vim.b.query_manager
+			if qm then
+				local current_state = qm.get_state()
+				local states = query_manager_module.states
+
+				table.insert(available_commands, "RefreshIntellisense")
+
+				local state_specific_commands = {
+					[states.Executing] = { "CancelQuery" },
+                    [states.Cancelling] = { "Disconnect" },
+					[states.Connected] = {
+						"ExecuteQuery",
+						"Disconnect",
+						"SwitchDatabase",
+						"BackupDatabase",
+						"RestoreDatabase"
+					},
+					[states.Disconnected] = { "Connect" },
 				}
-			elseif state == states.Connected then
-				return {
-					"NewQuery",
-					"NewDefaultQuery",
-					"EditConnections",
-					"RefreshIntellisense",
-					"ExecuteQuery",
-					"Disconnect",
-					"SwitchDatabase",
-					"BackupDatabase",
-					"RestoreDatabase",
-				}
-			elseif state == states.Disconnected then
-				return {
-					"NewQuery",
-					"NewDefaultQuery",
-					"EditConnections",
-					"RefreshIntellisense",
-					"Connect",
-				}
-			else
-				utils.log_error("Entered unrecognised query state: " .. state)
-				return {}
+
+				local commands_for_state = state_specific_commands[current_state]
+
+				if not commands_for_state and current_state ~= states.Connecting then
+					utils.log_error("Entered unrecognised query state: " .. current_state)
+					return {}
+				end
+
+				for _, cmd in ipairs(commands_for_state or {}) do
+					table.insert(available_commands, cmd)
+				end
+
+			elseif vim.b.query_result_info then
+				table.insert(available_commands, "SaveQueryResults")
 			end
+			return available_commands
 		end
 
 		vim.api.nvim_create_user_command("MSSQL", function(args)
