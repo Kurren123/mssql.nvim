@@ -145,6 +145,47 @@ refresh_cache = function()
 	end))
 end
 
+local generate_script = function(item)
+	local scripting_params = {
+		scriptDestination = "ToEditor",
+		scriptingObjects = {
+			{
+				type = item.objectType,
+				schema = item.metadata.schema,
+				name = item.metadata.name,
+			},
+		},
+		scriptOptions = {
+			-- /// Possible values:
+			-- ///   ScriptCreate
+			-- ///   ScriptDrop
+			-- ///   ScriptCreateDrop
+			-- ///   ScriptSelect
+			scriptCreateDrop = "ScriptSelect",
+			typeOfDataToScript = "SchemaOnly",
+			scriptStatistics = "ScriptStatsNone",
+		},
+		ownerURI = utils.lsp_file_uri(0),
+		-- public enum ScriptingOperationType
+		-- {
+		--     Select = 0,
+		--     Create = 1,
+		--     Insert = 2,
+		--     Update = 3,
+		--     Delete = 4,
+		--     Execute = 5,
+		--     Alter = 6
+		-- }
+		operation = 0,
+	}
+	vim.notify(vim.inspect(item))
+	local client = vim.b.query_manager.get_lsp_client()
+	utils.try_resume(coroutine.create(function()
+		local res, err = utils.lsp_request_async(client, "scripting/script", scripting_params)
+		vim.notify(vim.inspect({ res, err }))
+	end))
+end
+
 -- Picker
 local picker_icons = {
 	AggregateFunctionPartitionFunction = "󰡱",
@@ -173,7 +214,11 @@ find = function()
 		--TODO: fix searching, and select the item
 		confirm = function(picker, item)
 			picker:close()
-			vim.notify(vim.inspect(item))
+			generate_script(item)
 		end,
 	})
 end
+
+--[[
+{"jsonrpc":"2.0","id":32,"method":"connection/connect","params":{"ownerUri":"._ClockifyCRM_ClockifyCRM","connection":{"options":{"id":"6CB82B74-0D77-4BD9-B586-E335E3468FC3","server":".","database":"ClockifyCRM","databaseDisplayName":"ClockifyCRM","password":"","authenticationType":"Integrated","encrypt":"Mandatory","trustServerCertificate":true}}}}
+--]]
