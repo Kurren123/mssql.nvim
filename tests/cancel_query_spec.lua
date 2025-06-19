@@ -16,7 +16,7 @@ return {
 
     -- ensure we're still connected after cancelation
     local state = qm.get_state()
-    assert(state == "Connected", "Query manager should be 'Connected' after cancellation, but was '" .. state("'"))
+    assert(state == "Connected", "Query manager should be 'Connected' after cancellation, but was '" .. state .. "'")
 
     test_utils.defer_async(2000)
     vim.cmd("bdelete!")
