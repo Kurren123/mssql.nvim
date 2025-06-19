@@ -211,7 +211,21 @@ local picker_icons = {
 local pick_item_async = function(cache)
 	local co = coroutine.running()
 
-	require("snacks").picker.pick({
+	local success, snacks = pcall(require, "snacks")
+	if not success then
+		return utils.ui_select_async(cache, {
+			prompt = "Find",
+			format_item = function(item)
+				return table.concat({
+					picker_icons[item.nodeType],
+					" ",
+					item.pickerPath,
+					item.label,
+				})
+			end,
+		})
+	end
+	snacks.picker.pick({
 		title = "Find",
 		layout = "select",
 		items = cache,
