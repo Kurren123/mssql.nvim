@@ -110,8 +110,12 @@ return {
 				end
 
 				result, err = utils.wait_for_notification_async(bufnr, client, "query/complete", 360000)
+
+				-- handle cancellations that may be requested while waiting
 				if state.get_state() == states.Cancelling then
-				    return
+					state.set_state(states.Connected)
+					utils.log_info("Query was cancelled.")
+					return
 				end
 				state.set_state(states.Connected)
 
@@ -129,20 +133,8 @@ return {
 				end
 
 				state.set_state(states.Cancelling)
-				local result, err = utils.lsp_request_async(client, "query/cancel", { ownerUri = owner_uri })
-
-				if err then
-					state.set_state(states.Executing)
-					error("Error canceling query: " .. err.message, 0)
-				end
-
-				result, err = utils.wait_for_notification_async(bufnr, client, "query/complete", 360000)
-				state.set_state(states.Connected)
-
-				if err then
-					state.set_state(states.Executing)
-					error("Could not cancel query: " .. vim.inspect(err), 0)
-				end
+				-- let the waiting `execute_async` coroutine handle the 'query/complete' notification
+				utils.lsp_request_async(client, "query/cancel", { ownerUri = owner_uri })
 			end,
 
 			get_state = function()
