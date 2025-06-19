@@ -31,12 +31,17 @@ return {
 		local last_connect_params = {}
 		local object_cache = {}
 		local owner_uri = utils.lsp_file_uri(bufnr)
+		local refreshing = false
 
 		local refresh_object_cache = function()
+			if refreshing then
+				return
+			end
+			refreshing = true
 			-- refresh the object cache, fire and forget
 			utils.try_resume(coroutine.create(function()
 				object_cache = find_object.get_object_cache_async(client, last_connect_params.connection.options)
-				print("Finished object caching. Size: " .. #object_cache)
+				refreshing = false
 			end))
 		end
 

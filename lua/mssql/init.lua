@@ -367,7 +367,7 @@ end
 local function insert_query_into_buffer(query)
 	if vim.trim(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false))) == "" then
 		vim.api.nvim_buf_set_lines(0, 0, 0, false, vim.split(query, "\n"))
-		return
+		return 0
 	end
 
 	local query_manager = vim.b.query_manager
@@ -380,6 +380,7 @@ local function insert_query_into_buffer(query)
 	query_manager = vim.b[buf].query_manager
 	query_manager.connect_async(connect_params)
 	vim.api.nvim_buf_set_lines(buf, 0, 0, false, vim.split(query, "\n"))
+	return buf
 end
 
 local function backup_database_async(query_manager)
@@ -739,7 +740,13 @@ local M = {
 			if not item then
 				return
 			end
-			vim.notify(vim.inspect(item))
+			local buf = insert_query_into_buffer(item.script)
+			query_manager = vim.b[buf].query_manager
+			if item.select then
+				local result = query_manager.execute_async(item.script)
+				display_query_results(plugin_opts, result)
+			end
+			query_manager.refresh_object_cache()
 		end))
 	end,
 }

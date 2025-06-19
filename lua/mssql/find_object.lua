@@ -153,13 +153,12 @@ local get_object_cache_async = function(lsp_client, connection_options)
 				session_id = nil
 				return result, err
 			end)
+			lsp_client.handlers["objectexplorer/expandCompleted"] = nil
 			coroutine.resume(co, cache)
 		end
 	end
 
-	if lsp_client.handlers["objectexplorer/expandCompleted"] == nil then
-		lsp_client.handlers["objectexplorer/expandCompleted"] = expand_complete
-	end
+	lsp_client.handlers["objectexplorer/expandCompleted"] = expand_complete
 
 	expand(session.rootNode.nodePath)
 	return coroutine.yield()
@@ -192,7 +191,11 @@ local generate_script_async = function(item, client)
 		error("Error generating script (no script returned from language server)", 0)
 	end
 
-	return { script = res.script, select = scripting_params.operation == 0 }
+	return {
+		-- strip carriage returns
+		script = res.script:gsub("\r", ""),
+		select = scripting_params.operation == 0,
+	}
 end
 
 -- Picker
@@ -207,6 +210,7 @@ local picker_icons = {
 
 local pick_item_async = function(cache)
 	local co = coroutine.running()
+
 	require("snacks").picker.pick({
 		title = "Find",
 		layout = "select",
