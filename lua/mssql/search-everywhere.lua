@@ -67,20 +67,58 @@ end
 --The search everywhere plugin caches results the first time search is opened. We can do the same thing: cache results on 
 --connect, have a user command to refresh the search cache.
 --]]
+
+--[[
+			scriptOptions Possible values:
+			  ScriptCreate
+			  ScriptDrop
+			  ScriptCreateDrop
+			  ScriptSelect
+
+
+		public enum ScriptingOperationType
+		{
+		    Select = 0,
+		    Create = 1,
+		    Insert = 2,
+		    Update = 3,
+		    Delete = 4,
+		    Execute = 5,
+		    Alter = 6
+		}
+--]]
 local nodeTypes = {
-	AggregateFunctionPartitionFunction = "alter",
-	ScalarValuedFunction = "alter",
-	StoredProcedure = "alter",
-	TableValuedFunction = "alter",
-	Table = "select",
-	View = "select",
+	AggregateFunctionPartitionFunction = {
+		scriptCreateDrop = "ScriptCreate",
+		operation = 6,
+	},
+	ScalarValuedFunction = {
+		scriptCreateDrop = "ScriptCreate",
+		operation = 6,
+	},
+	StoredProcedure = {
+		scriptCreateDrop = "ScriptCreate",
+		operation = 6,
+	},
+	TableValuedFunction = {
+		scriptCreateDrop = "ScriptCreate",
+		operation = 6,
+	},
+	Table = {
+		scriptCreateDrop = "ScriptSelect",
+		operation = 0,
+	},
+	View = {
+		scriptCreateDrop = "ScriptSelect",
+		operation = 0,
+	},
 }
 
 local expand_count = 0
 
 local expand = function(sessionId, path)
+	expand_count = expand_count + 1
 	vim.schedule(function()
-		expand_count = expand_count + 1
 		local client = vim.b.query_manager.get_lsp_client()
 		client:request("objectexplorer/expand", {
 			sessionId = sessionId,
@@ -123,6 +161,7 @@ local expand_complete = function(err, result, ctx)
 			session_id = nil
 			return result, err
 		end)
+		vim.notify("Finished caching. Size: " .. #cache)
 	end
 end
 
@@ -150,35 +189,19 @@ local generate_script = function(item)
 		scriptDestination = "ToEditor",
 		scriptingObjects = {
 			{
-				type = item.objectType,
+				type = item.metadata.metadataTypeName,
 				schema = item.metadata.schema,
 				name = item.metadata.name,
 			},
 		},
 		scriptOptions = {
-			-- /// Possible values:
-			-- ///   ScriptCreate
-			-- ///   ScriptDrop
-			-- ///   ScriptCreateDrop
-			-- ///   ScriptSelect
-			scriptCreateDrop = "ScriptSelect",
+			scriptCreateDrop = nodeTypes[item.objectType].scriptCreateDrop,
 			typeOfDataToScript = "SchemaOnly",
 			scriptStatistics = "ScriptStatsNone",
 		},
 		ownerURI = utils.lsp_file_uri(0),
-		-- public enum ScriptingOperationType
-		-- {
-		--     Select = 0,
-		--     Create = 1,
-		--     Insert = 2,
-		--     Update = 3,
-		--     Delete = 4,
-		--     Execute = 5,
-		--     Alter = 6
-		-- }
-		operation = 0,
+		operation = nodeTypes[item.objectType].operation,
 	}
-	vim.notify(vim.inspect(item))
 	local client = vim.b.query_manager.get_lsp_client()
 	utils.try_resume(coroutine.create(function()
 		local res, err = utils.lsp_request_async(client, "scripting/script", scripting_params)
