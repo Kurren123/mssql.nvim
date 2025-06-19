@@ -1,4 +1,5 @@
 local utils = require("mssql.utils")
+local find_object = require("mssql.find_object")
 
 local states = {
 	Disconnected = "disconnected",
@@ -28,6 +29,7 @@ return {
 	create_query_manager = function(bufnr, client)
 		local state = new_state()
 		local last_connect_params = {}
+		local object_cache = {}
 
 		return {
 			-- the owner uri gets added to the connect_params
@@ -98,6 +100,12 @@ return {
 				elseif not (result or result.batchSummaries) then
 					error("Could not execute query: no results returned", 0)
 				end
+
+				-- refresh the cache, fire and forget so return the results straight away
+				find_object.get_object_cache(client, last_connect_params.connection.options, function(new_cache)
+					object_cache = new_cache
+				end)
+
 				return result
 			end,
 
@@ -111,6 +119,16 @@ return {
 
 			get_lsp_client = function()
 				return client
+			end,
+
+			refresh_cache = function()
+				find_object.get_object_cache(client, last_connect_params.connection.options, function(new_cache)
+					object_cache = new_cache
+				end)
+			end,
+
+			get_object_cache = function()
+				return object_cache
 			end,
 		}
 	end,

@@ -40,33 +40,22 @@ local wait_for_notification_async = function(client, method, timeout)
 	return coroutine.yield()
 end
 
-local session_id
-
-local get_session = function()
-	local client = vim.b.query_manager.get_lsp_client()
-
-	local params = vim.b.query_manager.get_connect_params().connection.options
-	params.ServerName = params.server
-	params.DatabaseName = params.database
-	params.UserName = params.user
-	params.EnclaveAttestationProtocol = params.attestationProtocol
+local get_session = function(client, connection_options)
+	connection_options.ServerName = connection_options.server
+	connection_options.DatabaseName = connection_options.database
+	connection_options.UserName = connection_options.user
+	connection_options.EnclaveAttestationProtocol = connection_options.attestationProtocol
 
 	-- For some reason, if there is no display name set on the connection parameters then
 	-- the language server will treat this as a default/system database:
 	-- https://github.com/microsoft/sqltoolsservice/blob/49036c6196e73c3791bca5d31e97a16afee00772/src/Microsoft.SqlTools.ServiceLayer/ObjectExplorer/ObjectExplorerService.cs#L537
-	params.DatabaseDisplayName = params.DatabaseDisplayName or params.database
+	connection_options.DatabaseDisplayName = connection_options.DatabaseDisplayName or connection_options.database
 
-	utils.lsp_request_async(client, "objectexplorer/createsession", params)
+	utils.lsp_request_async(client, "objectexplorer/createsession", connection_options)
 	local response, err = wait_for_notification_async(client, "objectexplorer/sessioncreated", 10000)
 	utils.safe_assert(not err, vim.inspect(err))
 	return response
 end
-
---[[
---NOTE: 
---The search everywhere plugin caches results the first time search is opened. We can do the same thing: cache results on 
---connect, have a user command to refresh the search cache.
---]]
 
 --[[
 			scriptOptions Possible values:
@@ -114,77 +103,68 @@ local nodeTypes = {
 	},
 }
 
-local expand_count = 0
+local get_object_cache = function(lsp_client, connection_options, callback)
+	local session = get_session(lsp_client, connection_options)
+	utils.safe_assert(session and session.sessionId, "Could not create a session")
 
-local expand = function(sessionId, path)
-	expand_count = expand_count + 1
-	vim.schedule(function()
-		local client = vim.b.query_manager.get_lsp_client()
-		client:request("objectexplorer/expand", {
-			sessionId = sessionId,
-			nodePath = path,
-		}, function(err, result, _, _)
-			return result, err
+	local session_id = session.sessionId
+	local root_path = session.rootNode.nodePath
+	local cache = {}
+	local expand_count = 0
+
+	local expand = function(path)
+		expand_count = expand_count + 1
+		vim.schedule(function()
+			lsp_client:request("objectexplorer/expand", {
+				sessionId = session_id,
+				nodePath = path,
+			}, function(err, result, _, _)
+				return result, err
+			end)
 		end)
-	end)
-end
-
-cache = {}
-local root_path = ""
-
-local expand_complete = function(err, result, ctx)
-	if not result then
-		return
 	end
 
-	for _, node in ipairs(result.nodes) do
-		if nodeTypes[node.objectType] then
-			local path = node.parentNodePath
-			node.pickerPath = string.sub(path, #root_path + 2, #path) .. "/"
-			node.text = node.pickerPath .. node.label
-			table.insert(cache, node)
-		elseif node.nodePath then
-			expand(session_id, node.nodePath)
-		else
-			vim.notify("no node path")
-			vim.notify(vim.inspect(node))
+	local expand_complete = function(_, expand_result, _)
+		if not expand_result then
+			return
+		end
+
+		for _, node in ipairs(expand_result.nodes) do
+			if nodeTypes[node.objectType] then
+				local path = node.parentNodePath
+				node.pickerPath = string.sub(path, #root_path + 2, #path) .. "/"
+				node.text = node.pickerPath .. node.label
+				table.insert(cache, node)
+			elseif node.nodePath then
+				expand(node.nodePath)
+			else
+				vim.notify("no node path")
+				vim.notify(vim.inspect(node))
+			end
+		end
+
+		expand_count = expand_count - 1
+		if expand_count == 0 then
+			-- disconnect when we've finished caching
+			local client = vim.b.query_manager.get_lsp_client()
+			client:request("objectExplorer/closeSession", {
+				sessionId = session_id,
+			}, function(err, result, _, _)
+				session_id = nil
+				return result, err
+			end)
+			callback(cache)
 		end
 	end
 
-	expand_count = expand_count - 1
-	if expand_count == 0 then
-		-- disconnect when we've finished caching
-		local client = vim.b.query_manager.get_lsp_client()
-		client:request("objectExplorer/closeSession", {
-			sessionId = session_id,
-		}, function(err, result, _, _)
-			session_id = nil
-			return result, err
-		end)
-		vim.notify("Finished caching. Size: " .. #cache)
-	end
-end
-
-refresh_cache = function()
-	cache = {}
-	local client = vim.b.query_manager.get_lsp_client()
-
-	client.handlers["objectexplorer/expandCompleted"] = nil -- delete this
-	if client.handlers["objectexplorer/expandCompleted"] == nil then
-		client.handlers["objectexplorer/expandCompleted"] = expand_complete
+	if lsp_client.handlers["objectexplorer/expandCompleted"] == nil then
+		lsp_client.handlers["objectexplorer/expandCompleted"] = expand_complete
 	end
 
-	utils.try_resume(coroutine.create(function()
-		local session = get_session()
-		utils.safe_assert(session and session.sessionId, "Could not create a session")
-
-		session_id = session.sessionId
-		root_path = session.rootNode.nodePath
-		expand(session.sessionId, session.rootNode.nodePath)
-	end))
+	expand(session.rootNode.nodePath)
 end
 
-local generate_script = function(item)
+local generate_script_async = function(item, client)
 	local scripting_params = {
 		scriptDestination = "ToEditor",
 		scriptingObjects = {
@@ -202,11 +182,12 @@ local generate_script = function(item)
 		ownerURI = utils.lsp_file_uri(0),
 		operation = nodeTypes[item.objectType].operation,
 	}
-	local client = vim.b.query_manager.get_lsp_client()
-	utils.try_resume(coroutine.create(function()
-		local res, err = utils.lsp_request_async(client, "scripting/script", scripting_params)
-		vim.notify(vim.inspect({ res, err }))
-	end))
+	local res, err = utils.lsp_request_async(client, "scripting/script", scripting_params)
+	if err then
+		err("Error generating script: " .. vim.inspect({ err = err, scripting_params = scripting_params }), 0)
+	end
+
+	return res
 end
 
 -- Picker
@@ -219,9 +200,9 @@ local picker_icons = {
 	View = "󱂬",
 }
 
-local picker = require("snacks").picker
-find = function()
-	picker.pick({
+local pick_item_async = function(cache)
+	local co = coroutine.running()
+	require("snacks").picker.pick({
 		title = "Find",
 		layout = "select",
 		items = cache,
@@ -234,14 +215,24 @@ find = function()
 				{ item.label },
 			}
 		end,
-		--TODO: fix searching, and select the item
 		confirm = function(picker, item)
 			picker:close()
-			generate_script(item)
+			coroutine.resume(co, item)
+		end,
+		cancel = function(picker)
+			picker:close()
+			coroutine.resume(co, nil)
 		end,
 	})
+	return coroutine.yield()
 end
 
---[[
-{"jsonrpc":"2.0","id":32,"method":"connection/connect","params":{"ownerUri":"._ClockifyCRM_ClockifyCRM","connection":{"options":{"id":"6CB82B74-0D77-4BD9-B586-E335E3468FC3","server":".","database":"ClockifyCRM","databaseDisplayName":"ClockifyCRM","password":"","authenticationType":"Integrated","encrypt":"Mandatory","trustServerCertificate":true}}}}
---]]
+local find_async = function(cache, lsp_client)
+	local item = pick_item_async(cache)
+	if not item then
+		return
+	end
+	return generate_script_async(item, lsp_client)
+end
+
+return { find_async = find_async, get_object_cache = get_object_cache }
