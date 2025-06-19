@@ -32,6 +32,14 @@ return {
 		local object_cache = {}
 		local owner_uri = utils.lsp_file_uri(bufnr)
 
+		local refresh_object_cache = function()
+			-- refresh the object cache, fire and forget
+			utils.try_resume(coroutine.create(function()
+				object_cache = find_object.get_object_cache_async(client, last_connect_params.connection.options)
+				print("Finished object caching. Size: " .. #object_cache)
+			end))
+		end
+
 		local existing_handler = client.handlers["connection/connectionchanged"]
 		client.handlers["connection/connectionchanged"] = function(err, result, ctx)
 			if existing_handler then
@@ -50,6 +58,7 @@ return {
 					},
 				},
 			})
+			refresh_object_cache()
 		end
 
 		return {
@@ -119,10 +128,7 @@ return {
 					error("Could not execute query: no results returned", 0)
 				end
 
-				-- refresh the cache, fire and forget so return the results straight away
-				find_object.get_object_cache(client, last_connect_params.connection.options, function(new_cache)
-					object_cache = new_cache
-				end)
+				refresh_object_cache()
 
 				return result
 			end,
@@ -139,11 +145,7 @@ return {
 				return client
 			end,
 
-			refresh_cache = function()
-				find_object.get_object_cache(client, last_connect_params.connection.options, function(new_cache)
-					object_cache = new_cache
-				end)
-			end,
+			refresh_object_cache = refresh_object_cache,
 
 			get_object_cache = function()
 				return object_cache

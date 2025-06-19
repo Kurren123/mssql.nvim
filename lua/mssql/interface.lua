@@ -27,8 +27,8 @@ return {
 			},
 			refresh_intellisense = {
 				"r",
-				M.refresh_intellisense_cache,
-				desc = "Refresh Intellisense",
+				M.refresh_cache,
+				desc = "Refresh Cache",
 				icon = { icon = "", color = "grey" },
 			},
 			new_default_query = {
@@ -36,6 +36,12 @@ return {
 				M.new_default_query,
 				desc = "New Default Query",
 				icon = { icon = "", color = "yellow" },
+			},
+			find_object = {
+				"f",
+				M.find_object,
+				desc = "Find",
+				icon = { icon = "", color = "green" },
 			},
 		}
 
@@ -74,6 +80,7 @@ return {
 								desc = "Switch Database",
 								icon = { icon = "", color = "yellow" },
 							},
+							keymaps.find_object,
 						}
 					elseif state == states.Disconnected then
 						return {

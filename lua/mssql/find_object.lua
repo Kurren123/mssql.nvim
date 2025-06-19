@@ -40,7 +40,7 @@ local wait_for_notification_async = function(client, method, timeout)
 	return coroutine.yield()
 end
 
-local get_session = function(client, connection_options)
+local get_session_async = function(client, connection_options)
 	connection_options.ServerName = connection_options.server
 	connection_options.DatabaseName = connection_options.database
 	connection_options.UserName = connection_options.user
@@ -103,14 +103,15 @@ local nodeTypes = {
 	},
 }
 
-local get_object_cache = function(lsp_client, connection_options, callback)
-	local session = get_session(lsp_client, connection_options)
-	utils.safe_assert(session and session.sessionId, "Could not create a session")
+local get_object_cache_async = function(lsp_client, connection_options)
+	local session = get_session_async(lsp_client, connection_options)
+	utils.safe_assert(session and session.sessionId)
 
 	local session_id = session.sessionId
 	local root_path = session.rootNode.nodePath
 	local cache = {}
 	local expand_count = 0
+	local co = coroutine.running()
 
 	local expand = function(path)
 		expand_count = expand_count + 1
@@ -146,14 +147,13 @@ local get_object_cache = function(lsp_client, connection_options, callback)
 		expand_count = expand_count - 1
 		if expand_count == 0 then
 			-- disconnect when we've finished caching
-			local client = vim.b.query_manager.get_lsp_client()
-			client:request("objectExplorer/closeSession", {
+			lsp_client:request("objectExplorer/closeSession", {
 				sessionId = session_id,
 			}, function(err, result, _, _)
 				session_id = nil
 				return result, err
 			end)
-			callback(cache)
+			coroutine.resume(co, cache)
 		end
 	end
 
@@ -162,6 +162,7 @@ local get_object_cache = function(lsp_client, connection_options, callback)
 	end
 
 	expand(session.rootNode.nodePath)
+	return coroutine.yield()
 end
 
 local generate_script_async = function(item, client)
@@ -182,12 +183,16 @@ local generate_script_async = function(item, client)
 		ownerURI = utils.lsp_file_uri(0),
 		operation = nodeTypes[item.objectType].operation,
 	}
-	local res, err = utils.lsp_request_async(client, "scripting/script", scripting_params)
-	if err then
-		err("Error generating script: " .. vim.inspect({ err = err, scripting_params = scripting_params }), 0)
+	local res, script_err = utils.lsp_request_async(client, "scripting/script", scripting_params)
+	if script_err then
+		error("Error generating script: " .. vim.inspect({ err = script_err, scripting_params = scripting_params }), 0)
 	end
 
-	return res
+	if not (res and res.script) then
+		error("Error generating script (no script returned from language server)", 0)
+	end
+
+	return { script = res.script, select = scripting_params.operation == 0 }
 end
 
 -- Picker
@@ -235,4 +240,4 @@ local find_async = function(cache, lsp_client)
 	return generate_script_async(item, lsp_client)
 end
 
-return { find_async = find_async, get_object_cache = get_object_cache }
+return { find_async = find_async, get_object_cache_async = get_object_cache_async }
