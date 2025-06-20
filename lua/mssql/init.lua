@@ -584,7 +584,7 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			switch_database_async()
-			query_manager.refresh_cache_async()
+			query_manager.refresh_object_cache()
 		end))
 	end,
 
@@ -597,7 +597,7 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			connect_async(plugin_opts, query_manager)
-			query_manager.refresh_cache_async()
+			query_manager.refresh_object_cache()
 		end))
 	end,
 
