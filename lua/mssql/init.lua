@@ -760,7 +760,7 @@ local M = {
 			end
 			local buf = insert_query_into_buffer(item.script)
 			query_manager = vim.b[buf].query_manager
-			if item.select then
+			if plugin_opts.execute_generated_select_statements and item.select then
 				local result = query_manager.execute_async(item.script)
 				display_query_results(plugin_opts, result)
 			end

@@ -252,8 +252,9 @@ local pick_item_async = function(cache)
 			return {
 				{ picker_icons[item.nodeType], "SnacksPickerIcon" },
 				{ " " },
-				{ item.picker_path, "SnacksPickerComment" },
 				{ item.label },
+				{ " " },
+				{ item.picker_path, "SnacksPickerComment" },
 			}
 		end,
 		confirm = function(picker, item)
