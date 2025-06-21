@@ -40,7 +40,7 @@ Lualine integration
 
 <img src="./docs/screenshots/Lualine.png" alt="Which key screenshot" width="600"/>
 
-Other cherries on top:
+🍒 Other cherries on top:
 
 - Save query results to csv, json, Excel and xml
 - Backup to/restore from `.bak` files
