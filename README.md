@@ -12,16 +12,11 @@ An SQL Server plugin for neovim. Like it? Give a ⭐️!
 
 ## Features
 
-Completions, including TSQL keywords,
+Completions, including TSQL keywords, stored procedures and cross database
+queries
 
 <img src="./docs/screenshots/Tsql_completion.png" alt="Tsql keywords screenshot" width="300"/>
-
-stored procedures
-
 <img src="./docs/screenshots/Stored_procedure_completion.png" alt="stored procedures screenshot" width="300"/>
-
-and cross database queries
-
 <img src="./docs/screenshots/Cross_db_completion.png" alt="Cross db completion" width="300"/>
 
 Execute queries, with results in markdown tables for automatic colouring and
@@ -219,19 +214,20 @@ You can call the following as key maps typing your
 [prefix](#installation-and-setup) first, as user commands by doing
 `:MSSQL <command>` or as functions on `require("mssql")`.
 
-| Key Map | User Command          | Function                       | Description                                                                                                                                                                       |
-| ------- | --------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `n`     | `NewQuery`            | `new_query()`                  | Open a new buffer for sql queries                                                                                                                                                 |
-| `c`     | `Connect`             | `connect()`                    | Connect the current buffer (you'll be prompted to choose a connection)                                                                                                            |
-| `x`     | `ExecuteQuery`        | `execute_query()`              | Execute the selection, or the whole buffer. If you are disconnected, it will try to connect to the `default` connection in your `connections.json`.                               |
-| `q`     | `Disconnect`          | `disconnect()`                 | Disconnects the current buffer                                                                                                                                                    |
-| `s`     | `SwitchDatabase`      | `switch_database()`            | Prompts, then switches to a database that is on the currently connected server                                                                                                    |
-| `d`     | `NewDefaultQuery`     | `new_default_query()`          | Opens a new query and connects to the connection called `default` in your `connections.json`. Useful when combined with the `promptForDatabase` option in the `connections.json`. |
-| `s`     | `SaveQueryResults`    | `save_query_results()`         | When in a query result buffer, save the query result by giving a file path with an extension of `.csv`, `.json`, `.xml`, `.xlsx` or `.xls`                                        |
-| `r`     | `RefreshIntellisense` | `refresh_intellisense_cache()` | Rebuild the intellisense cache                                                                                                                                                    |
-| `e`     | `EditConnections`     | `edit_connections()`           | Open the [connections file](#connections-json-file) for editing                                                                                                                   |
-|         | `BackupDatabase`      | `backup_database()`            | Inserts an SQL command to back up the currently connected database                                                                                                                |
-|         | `RestoreDatabase`     | `restore_database()`           | Prompts for a `.bak` file, then inserts an SQL command to restore the database from that file                                                                                     |
+| Key Map | User Command       | Function               | Description                                                                                                                                                                       |
+| ------- | ------------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `n`     | `NewQuery`         | `new_query()`          | Open a new buffer for sql queries                                                                                                                                                 |
+| `c`     | `Connect`          | `connect()`            | Connect the current buffer (you'll be prompted to choose a connection)                                                                                                            |
+| `x`     | `ExecuteQuery`     | `execute_query()`      | Execute the selection, or the whole buffer. If you are disconnected, it will try to connect to the `default` connection in your `connections.json`.                               |
+| `f`     | `Find`             | `find_object()`        | Find a table/view/stored procedure/function and generate a script                                                                                                                 |
+| `q`     | `Disconnect`       | `disconnect()`         | Disconnects the current buffer                                                                                                                                                    |
+| `s`     | `SwitchDatabase`   | `switch_database()`    | Prompts, then switches to a database that is on the currently connected server                                                                                                    |
+| `d`     | `NewDefaultQuery`  | `new_default_query()`  | Opens a new query and connects to the connection called `default` in your `connections.json`. Useful when combined with the `promptForDatabase` option in the `connections.json`. |
+| `s`     | `SaveQueryResults` | `save_query_results()` | When in a query result buffer, save the query result by giving a file path with an extension of `.csv`, `.json`, `.xml`, `.xlsx` or `.xls`                                        |
+| `r`     | `RefreshCache`     | `refresh_cache()`      | Rebuild the intellisense and sql object (used for the Find function) caches                                                                                                       |
+| `e`     | `EditConnections`  | `edit_connections()`   | Open the [connections file](#connections-json-file) for editing                                                                                                                   |
+|         | `BackupDatabase`   | `backup_database()`    | Inserts an SQL command to back up the currently connected database                                                                                                                |
+|         | `RestoreDatabase`  | `restore_database()`   | Prompts for a `.bak` file, then inserts an SQL command to restore the database from that file                                                                                     |
 
 ## Connections json file
 
