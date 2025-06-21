@@ -53,6 +53,13 @@ local get_session_async = function(client, connection_options)
 
 	utils.lsp_request_async(client, "objectexplorer/createsession", connection_options)
 	local response, err = wait_for_notification_async(client, "objectexplorer/sessioncreated", 10000)
+	if response and response.rootNode and response.rootNode.objectType == "Server" then
+		-- If we connect to a system database then the root node will be the server.
+		-- So we need to set a target path to navigate to first so that we only search the database we connect to
+		response.target_path = response.rootNode.nodePath
+			.. "/Databases/System Databases/"
+			.. connection_options.DatabaseName
+	end
 	utils.safe_assert(not err, vim.inspect(err))
 	return response
 end
@@ -133,18 +140,25 @@ local get_object_cache_async = function(lsp_client, connection_options)
 		for _, node in ipairs(expand_result.nodes) do
 			if nodeTypes[node.objectType] then
 				local path = node.parentNodePath
-				node.picker_path = string.sub(path, #root_path + 2, #path) .. "/"
+				local root_path_length = #root_path
+				if session.target_path then
+					root_path_length = #session.target_path
+				end
+				node.picker_path = string.sub(path, root_path_length + 2, #path) .. "/"
 				node.text = node.picker_path .. node.label
 				table.insert(cache, node)
-			elseif
-				-- Dont expand "Databases" folders (eg if they are in the master db) as this will
-				-- take a long time. Instead the user can just connect to that db first
-				node.nodePath and node.label ~= "Databases"
-			then
-				expand(node.nodePath)
 			elseif not node.nodePath then
 				vim.notify("no node path")
 				vim.notify(vim.inspect(node))
+			elseif session.target_path and vim.startswith(session.target_path, node.nodePath) then
+				-- We are on our way to the target, expand
+				expand(node.nodePath)
+			elseif session.target_path and vim.startswith(node.nodePath, session.target_path) then
+				-- we have hit our target path, expand inside it
+				expand(node.nodePath)
+			elseif not session.target_path then
+				-- We are not in a system database. Expand as usual
+				expand(node.nodePath)
 			end
 		end
 

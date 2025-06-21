@@ -33,15 +33,20 @@ return {
 		local owner_uri = utils.lsp_file_uri(bufnr)
 		local refreshing = false
 
-		local refresh_object_cache = function()
+		local refresh_object_cache = function(clear_cache)
 			if refreshing then
 				return
 			end
+			if clear_cache then
+				object_cache = {}
+			end
 			refreshing = true
+			vim.cmd("redrawstatus")
 			-- refresh the object cache, fire and forget
 			utils.try_resume(coroutine.create(function()
 				object_cache = find_object.get_object_cache_async(client, last_connect_params.connection.options)
 				refreshing = false
+				vim.cmd("redrawstatus")
 			end))
 		end
 
@@ -154,6 +159,10 @@ return {
 
 			get_object_cache = function()
 				return object_cache
+			end,
+
+			is_refreshing_object_cache = function()
+				return refreshing
 			end,
 		}
 	end,

@@ -559,6 +559,8 @@ local function save_query_results_async(result_info)
 	end
 end
 
+local show_caching_in_status_line = false
+
 local M = {
 	new_query = function()
 		utils.try_resume(coroutine.create(function()
@@ -597,7 +599,7 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			connect_async(plugin_opts, query_manager)
-			query_manager.refresh_object_cache()
+			query_manager.refresh_object_cache(true)
 		end))
 	end,
 
@@ -613,7 +615,7 @@ local M = {
 			return
 		end
 		-- refresh the object cache, fire and forget
-		query_manager.refresh_object_cache()
+		query_manager.refresh_object_cache(true)
 
 		-- refresh the intellisense cache, fire and forget
 		local success, msg = pcall(function()
@@ -650,6 +652,7 @@ local M = {
 			end
 			local result = query_manager.execute_async(query)
 			display_query_results(plugin_opts, result)
+			query_manager.refresh_object_cache()
 		end))
 	end,
 
@@ -671,13 +674,18 @@ local M = {
 				if not (connect_params and connect_params.connection and connect_params.connection.options) then
 					return "Connected"
 				end
+
 				local db = connect_params.connection.options.database
 				local server = connect_params.connection.options.server
 				if not (db or server) then
 					return "Connected"
 				end
+				local caching = ""
+				if show_caching_in_status_line and qm.is_refreshing_object_cache() then
+					caching = " (Caching database objects...)"
+				end
 
-				return server .. " | " .. db
+				return server .. " | " .. db .. caching
 			end
 		end,
 		cond = function()
@@ -729,12 +737,16 @@ local M = {
 			return
 		end
 
-		local cache = query_manager.get_object_cache()
-		if #cache == 0 then
+		if query_manager.is_refreshing_object_cache() then
+			show_caching_in_status_line = true
+			vim.cmd("redrawstatus")
 			utils.log_error("Still caching. Try again in a few seconds...")
 			return
 		end
+		show_caching_in_status_line = false
+		vim.cmd("redrawstatus")
 
+		local cache = query_manager.get_object_cache()
 		utils.try_resume(coroutine.create(function()
 			local item = require("mssql.find_object").find_async(cache, query_manager.get_lsp_client())
 			if not item then
@@ -746,7 +758,6 @@ local M = {
 				local result = query_manager.execute_async(item.script)
 				display_query_results(plugin_opts, result)
 			end
-			query_manager.refresh_object_cache()
 		end))
 	end,
 }
