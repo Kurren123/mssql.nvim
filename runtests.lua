@@ -63,10 +63,10 @@ local tests = {
 	require("tests.dbo_completion_spec"),
 	require("tests.execute_query_spec"),
 	require("tests.switch_database_spec"),
+	require("tests.finder_spec"),
 	require("tests.query_zero_rows_spec"),
 	require("tests.file_with_space_spec"),
 	require("tests.non_ascii_spec"),
-	require("tests.finder_spec"),
 }
 
 coroutine.resume(coroutine.create(function()
