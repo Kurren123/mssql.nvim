@@ -66,6 +66,7 @@ local tests = {
 	require("tests.query_zero_rows_spec"),
 	require("tests.file_with_space_spec"),
 	require("tests.non_ascii_spec"),
+	require("tests.finder_spec"),
 }
 
 coroutine.resume(coroutine.create(function()
