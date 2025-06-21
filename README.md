@@ -26,7 +26,7 @@ rendering
 
 Find and generate scripts for tables, views, stored procedures and functions
 
-![finder screenshot](./docs/screenshots/Find.png)
+<img src="./docs/screenshots/Find.png" alt="finder screenshot" width="300"/>
 
 User commands and optional which-key integration, showing only the key
 maps/commands which are possible (eg don't show `Connect` if we are already
