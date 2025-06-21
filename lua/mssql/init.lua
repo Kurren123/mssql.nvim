@@ -50,6 +50,12 @@ local function enable_lsp(opts)
 			opts.tools_file or default_path,
 			"--enable-connection-pooling",
 			"--enable-sql-authentication-provider",
+			"--log-file",
+			joinpath(opts.data_dir, "sqltools.log"),
+			"--application-name",
+			"neovim",
+			"--data-path",
+			joinpath(opts.data_dir, "sql-tools-data"),
 		},
 		filetypes = { "sql" },
 		handlers = {
