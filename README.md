@@ -22,11 +22,11 @@ queries
 Execute queries, with results in markdown tables for automatic colouring and
 rendering
 
-![results screenshot](./docs/screenshots/Results.png)
+<img src="./docs/screenshots/Results.png" alt="results screenshot" width="300"/>
 
 Find and generate scripts for tables, views, stored procedures and functions
 
-<img src="./docs/screenshots/Find.png" alt="finder screenshot" width="300"/>
+<img src="./docs/screenshots/Find.png" alt="finder screenshot" width="400"/>
 
 User commands and optional which-key integration, showing only the key
 maps/commands which are possible (eg don't show `Connect` if we are already
