@@ -22,7 +22,7 @@ queries
 Execute queries, with results in markdown tables for automatic colouring and
 rendering
 
-<img src="./docs/screenshots/Results.png" alt="results screenshot" width="300"/>
+<img src="./docs/screenshots/Results.png" alt="results screenshot" width="400"/>
 
 Find and generate scripts for tables, views, stored procedures and functions
 

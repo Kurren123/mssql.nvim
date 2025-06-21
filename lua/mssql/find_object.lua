@@ -133,12 +133,16 @@ local get_object_cache_async = function(lsp_client, connection_options)
 		for _, node in ipairs(expand_result.nodes) do
 			if nodeTypes[node.objectType] then
 				local path = node.parentNodePath
-				node.pickerPath = string.sub(path, #root_path + 2, #path) .. "/"
-				node.text = node.pickerPath .. node.label
+				node.picker_path = string.sub(path, #root_path + 2, #path) .. "/"
+				node.text = node.picker_path .. node.label
 				table.insert(cache, node)
-			elseif node.nodePath then
+			elseif
+				-- Dont expand "Databases" folders (eg if they are in the master db) as this will
+				-- take a long time. Instead the user can just connect to that db first
+				node.nodePath and node.label ~= "Databases"
+			then
 				expand(node.nodePath)
-			else
+			elseif not node.nodePath then
 				vim.notify("no node path")
 				vim.notify(vim.inspect(node))
 			end
@@ -219,12 +223,13 @@ local pick_item_async = function(cache)
 				return table.concat({
 					picker_icons[item.nodeType],
 					" ",
-					item.pickerPath,
+					item.picker_path,
 					item.label,
 				})
 			end,
 		})
 	end
+
 	snacks.picker.pick({
 		title = "Find",
 		layout = "select",
@@ -233,8 +238,7 @@ local pick_item_async = function(cache)
 			return {
 				{ picker_icons[item.nodeType], "SnacksPickerIcon" },
 				{ " " },
-				{ item.pickerPath, "SnacksPickerComment" },
-				-- { " " },
+				{ item.picker_path, "SnacksPickerComment" },
 				{ item.label },
 			}
 		end,
