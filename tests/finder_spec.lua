@@ -1,6 +1,5 @@
 local mssql = require("mssql")
 local test_utils = require("tests.utils")
-local utils = require("mssql.utils")
 
 local find_async = function()
 	local co = coroutine.running()
@@ -17,6 +16,7 @@ return {
 		-- wait until objects are cached
 		test_utils.defer_async(2000)
 		find_async()
+		test_utils.defer_async(2000)
 		local results = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
 		assert(results:find("Hyundai"), "Sql query results do not contain Hyundai: " .. results)
 		vim.cmd("bdelete")

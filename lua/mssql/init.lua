@@ -59,6 +59,9 @@ local function enable_lsp(opts)
 		},
 		filetypes = { "sql" },
 		handlers = {
+			["textDocument/definition"] = function(err, result, ctx, config)
+				vim.notify("goto definition callback")
+			end,
 			["textDocument/intelliSenseReady"] = function(err, result)
 				if err then
 					utils.log_error("Could not start intellisense: " .. vim.inspect(err))
