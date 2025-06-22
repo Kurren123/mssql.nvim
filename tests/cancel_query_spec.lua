@@ -11,8 +11,7 @@ return {
     mssql.cancel_query()
     test_utils.defer_async(1000)
 
-    local buf = vim.api.nvim_get_current_buf()
-    local qm = vim.b[buf].query_manager
+    local qm = vim.b.query_manager
 
     -- ensure we're still connected after cancelation
     local state = qm.get_state()
