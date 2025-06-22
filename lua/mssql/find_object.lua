@@ -9,24 +9,20 @@ local utils = require("mssql.utils")
 local wait_for_notification_async = function(client, method, timeout)
 	local this = coroutine.running()
 	local resumed = false
-	local existing_handler = client.handlers[method]
-	client.handlers[method] = function(err, result, ctx)
-		if existing_handler then
-			existing_handler(err, result, ctx)
-		end
-
+	local handler
+	handler = function(err, result, _)
 		if not resumed then
 			resumed = true
-			vim.lsp.handlers[method] = existing_handler
+			utils.unregister_lsp_handler(client, method, handler)
 			utils.try_resume(this, result, err)
 		end
 		return result, err
 	end
-
+	utils.register_lsp_handler(client, method, handler)
 	vim.defer_fn(function()
 		if not resumed then
 			resumed = true
-			vim.lsp.handlers[method] = existing_handler
+			utils.unregister_lsp_handler(client, method, handler)
 			utils.try_resume(
 				this,
 				nil,

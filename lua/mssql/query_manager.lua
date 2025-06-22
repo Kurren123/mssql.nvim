@@ -65,12 +65,8 @@ return {
 			end))
 		end
 
-		local existing_handler = client.handlers["connection/connectionchanged"]
-		client.handlers["connection/connectionchanged"] = function(err, result, ctx)
-			if existing_handler then
-				existing_handler(err, result, ctx)
-			end
-
+		local connectionchanged_handler
+		connectionchanged_handler = function(_, result, _)
 			if not (result and result.ownerUri == owner_uri and result.connection) then
 				return
 			end
@@ -85,6 +81,7 @@ return {
 			})
 			refresh_object_cache()
 		end
+		utils.register_lsp_handler(client, "connection/connectionchanged", connectionchanged_handler)
 
 		return {
 			-- the owner uri gets added to the connect_params
