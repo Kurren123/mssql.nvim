@@ -764,7 +764,7 @@ local M = {
 			and connect_params.connection.options.database
 			and connect_params.connection.options.server
 		then
-			title = connect_params.connection.options.database .. " | " .. connect_params.connection.options.server
+			title = connect_params.connection.options.server .. " | " .. connect_params.connection.options.database
 		end
 
 		vim.notify(title)
