@@ -110,14 +110,13 @@ return {
 				end
 
 				result, err = utils.wait_for_notification_async(bufnr, client, "query/complete", 360000)
+				state.set_state(states.Connected)
 
 				-- handle cancellations that may be requested while waiting
 				if state.get_state() == states.Cancelling then
-					state.set_state(states.Connected)
 					utils.log_info("Query was cancelled.")
 					return
 				end
-				state.set_state(states.Connected)
 
 				if err then
 					error("Could not execute query: " .. vim.inspect(err), 0)
@@ -129,7 +128,7 @@ return {
 
 			cancel_async = function()
 				if state.get_state() ~= states.Executing then
-				  error("There is no query being executed in the current buffer")
+				  error("There is no query being executed in the current buffer", 0)
 				end
 
 				state.set_state(states.Cancelling)
