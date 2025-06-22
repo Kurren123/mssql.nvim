@@ -110,7 +110,7 @@ local nodeTypes = {
 	},
 }
 
-local get_object_cache_async = function(lsp_client, connection_options)
+local get_object_cache_async = function(lsp_client, connection_options, cancellation_token)
 	local session = get_session_async(lsp_client, connection_options)
 	utils.safe_assert(session and session.sessionId)
 
@@ -119,10 +119,30 @@ local get_object_cache_async = function(lsp_client, connection_options)
 	local cache = {}
 	local expand_count = 0
 	local co = coroutine.running()
+	local expand_complete
+
+	local clean_up_and_return = function(return_value)
+		-- disconnect
+		lsp_client:request("objectExplorer/closeSession", {
+			sessionId = session_id,
+		}, function(err, result, _, _)
+			session_id = nil
+			return result, err
+		end)
+		utils.unregister_lsp_handler(lsp_client, "objectexplorer/expandCompleted", expand_complete)
+		if coroutine.status(co) == "suspended" then
+			coroutine.resume(co, return_value)
+		end
+	end
 
 	local expand = function(path)
 		expand_count = expand_count + 1
 		vim.schedule(function()
+			-- check for cancellation every time we expand a node in the tree
+			if cancellation_token.cancel then
+				clean_up_and_return(false)
+				return
+			end
 			lsp_client:request("objectexplorer/expand", {
 				sessionId = session_id,
 				nodePath = path,
@@ -132,11 +152,10 @@ local get_object_cache_async = function(lsp_client, connection_options)
 		end)
 	end
 
-	local expand_complete = function(_, expand_result, _)
+	expand_complete = function(_, expand_result, _)
 		if not expand_result then
 			return
 		end
-
 		for _, node in ipairs(expand_result.nodes) do
 			if nodeTypes[node.objectType] then
 				local path = node.parentNodePath
@@ -164,19 +183,11 @@ local get_object_cache_async = function(lsp_client, connection_options)
 
 		expand_count = expand_count - 1
 		if expand_count == 0 then
-			-- disconnect when we've finished caching
-			lsp_client:request("objectExplorer/closeSession", {
-				sessionId = session_id,
-			}, function(err, result, _, _)
-				session_id = nil
-				return result, err
-			end)
-			lsp_client.handlers["objectexplorer/expandCompleted"] = nil
-			coroutine.resume(co, cache)
+			clean_up_and_return(cache)
 		end
 	end
 
-	lsp_client.handlers["objectexplorer/expandCompleted"] = expand_complete
+	utils.register_lsp_handler(lsp_client, "objectexplorer/expandCompleted", expand_complete)
 
 	expand(session.rootNode.nodePath)
 	return coroutine.yield()

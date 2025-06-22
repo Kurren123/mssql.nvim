@@ -605,7 +605,7 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			connect_async(plugin_opts, query_manager)
-			query_manager.refresh_object_cache(true)
+			query_manager.refresh_object_cache()
 		end))
 	end,
 
@@ -621,7 +621,11 @@ local M = {
 			return
 		end
 		-- refresh the object cache, fire and forget
-		query_manager.refresh_object_cache(true)
+		show_caching_in_status_line = true
+		query_manager.refresh_object_cache(function()
+			show_caching_in_status_line = false
+			vim.cmd("redrawstatus")
+		end)
 
 		-- refresh the intellisense cache, fire and forget
 		local success, msg = pcall(function()
@@ -658,7 +662,6 @@ local M = {
 			end
 			local result = query_manager.execute_async(query)
 			display_query_results(plugin_opts, result)
-			query_manager.refresh_object_cache()
 		end))
 	end,
 

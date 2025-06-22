@@ -32,21 +32,36 @@ return {
 		local object_cache = {}
 		local owner_uri = utils.lsp_file_uri(bufnr)
 		local refreshing = false
+		local refresh_cancellation_token = { cancel = false }
 
-		local refresh_object_cache = function(clear_cache)
-			if refreshing then
-				return
-			end
-			if clear_cache then
-				object_cache = {}
-			end
+		local refresh_object_cache = function(callback)
+			-- cancel the current token (so running refresh will have a reference
+			-- to it and periodically check it), and set the current token to a new one.
+			-- Any running refresh will still refer to the old one
+			refresh_cancellation_token.cancel = true
+			local this_cancellation_token = { cancel = false }
+			refresh_cancellation_token = this_cancellation_token
+
+			object_cache = {}
 			refreshing = true
 			vim.cmd("redrawstatus")
 			-- refresh the object cache, fire and forget
 			utils.try_resume(coroutine.create(function()
-				object_cache = find_object.get_object_cache_async(client, last_connect_params.connection.options)
+				local new_cache = find_object.get_object_cache_async(
+					client,
+					last_connect_params.connection.options,
+					refresh_cancellation_token
+				)
+				if this_cancellation_token.cancel then
+					return
+				end
+
+				object_cache = new_cache
 				refreshing = false
 				vim.cmd("redrawstatus")
+				if callback then
+					callback()
+				end
 			end))
 		end
 
@@ -137,8 +152,6 @@ return {
 				elseif not (result or result.batchSummaries) then
 					error("Could not execute query: no results returned", 0)
 				end
-
-				refresh_object_cache()
 
 				return result
 			end,
