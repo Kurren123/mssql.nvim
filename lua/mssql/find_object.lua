@@ -233,13 +233,13 @@ local picker_icons = {
 	View = "󱂬",
 }
 
-local pick_item_async = function(cache)
+local pick_item_async = function(cache, title)
 	local co = coroutine.running()
 
 	local success, snacks = pcall(require, "snacks")
 	if not success then
 		return utils.ui_select_async(cache, {
-			prompt = "Find",
+			prompt = title,
 			format_item = function(item)
 				return table.concat({
 					picker_icons[item.nodeType],
@@ -252,7 +252,7 @@ local pick_item_async = function(cache)
 	end
 
 	snacks.picker.pick({
-		title = "Find",
+		title = title,
 		layout = "select",
 		items = cache,
 		format = function(item)
@@ -276,8 +276,8 @@ local pick_item_async = function(cache)
 	return coroutine.yield()
 end
 
-local find_async = function(cache, lsp_client)
-	local item = pick_item_async(cache)
+local find_async = function(cache, title, lsp_client)
+	local item = pick_item_async(cache, title)
 	if not item then
 		return
 	end

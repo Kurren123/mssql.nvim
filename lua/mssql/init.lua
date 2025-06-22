@@ -755,9 +755,30 @@ local M = {
 		show_caching_in_status_line = false
 		vim.cmd("redrawstatus")
 
-		local cache = query_manager.get_object_cache()
+		local title = "Find"
+		local connect_params = query_manager.get_connect_params()
+		if
+			connect_params
+			and connect_params.connection
+			and connect_params.connection.options
+			and connect_params.connection.options.database
+			and connect_params.connection.options.server
+		then
+			title = connect_params.connection.options.database .. " | " .. connect_params.connection.options.server
+		end
+
+		vim.notify(title)
+		local db = connect_params.connection.options.database
+		local server = connect_params.connection.options.server
+		if not (db or server) then
+			return "Connected"
+		end
 		utils.try_resume(coroutine.create(function()
-			local item = require("mssql.find_object").find_async(cache, query_manager.get_lsp_client())
+			local item = require("mssql.find_object").find_async(
+				query_manager.get_object_cache(),
+				title,
+				query_manager.get_lsp_client()
+			)
 			if not item then
 				return
 			end
