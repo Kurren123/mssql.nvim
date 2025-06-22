@@ -735,7 +735,7 @@ local M = {
 		end))
 	end,
 
-	find_object = function()
+	find_object = function(callback)
 		local query_manager = vim.b.query_manager
 		if not query_manager then
 			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
@@ -788,6 +788,7 @@ local M = {
 				local result = query_manager.execute_async(item.script)
 				display_query_results(plugin_opts, result)
 			end
+			callback()
 		end))
 	end,
 }
