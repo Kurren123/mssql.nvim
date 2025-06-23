@@ -1,3 +1,28 @@
+-- as far as I can tell, only one handler can exist for an Lsp
+-- method. This lets you register/unregister multiple handlers
+local register_lsp_handler = function(lsp_client, method, handler)
+	if not lsp_client.custom_handlers then
+		lsp_client.custom_handlers = {}
+	end
+	if not lsp_client.custom_handlers[method] then
+		lsp_client.custom_handlers[method] = {}
+	end
+	lsp_client.custom_handlers[method][handler] = true
+
+	lsp_client.handlers[method] = function(err, result, ctx)
+		for custom_handler, _ in pairs(lsp_client.custom_handlers[method]) do
+			custom_handler(err, result, ctx)
+		end
+	end
+end
+
+local unregister_lsp_handler = function(lsp_client, method, handler)
+	if not (lsp_client.custom_handlers and lsp_client.custom_handlers[method]) then
+		return
+	end
+	lsp_client.custom_handlers[method][handler] = nil
+end
+
 local function wait_for_schedule_async()
 	local co = coroutine.running()
 	vim.schedule(function()
@@ -143,23 +168,21 @@ return {
 		local owner_uri = lsp_file_uri(bufnr)
 		local this = coroutine.running()
 		local resumed = false
-		local existing_handler = client.handlers[method]
-		client.handlers[method] = function(err, result, ctx)
-			if existing_handler then
-				existing_handler(err, result, ctx)
-			end
+		local handler
+		handler = function(err, result, _)
 			if not resumed and result and result.ownerUri == owner_uri then
 				resumed = true
-				vim.lsp.handlers[method] = existing_handler
+				unregister_lsp_handler(client, method, handler)
 				try_resume(this, result, err)
 			end
 			return result, err
 		end
+		register_lsp_handler(client, method, handler)
 
 		vim.defer_fn(function()
 			if not resumed then
 				resumed = true
-				vim.lsp.handlers[method] = existing_handler
+				unregister_lsp_handler(client, method, handler)
 				try_resume(
 					this,
 					nil,
@@ -253,4 +276,10 @@ return {
 
 		return result
 	end,
+
+	-- as far as I can tell, only one handler can exist for an Lsp
+	-- method. This lets you register/unregister multiple handlers
+	register_lsp_handler = register_lsp_handler,
+
+	unregister_lsp_handler = unregister_lsp_handler,
 }

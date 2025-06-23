@@ -50,6 +50,12 @@ local function enable_lsp(opts)
 			opts.tools_file or default_path,
 			"--enable-connection-pooling",
 			"--enable-sql-authentication-provider",
+			"--log-file",
+			joinpath(opts.data_dir, "sqltools.log"),
+			"--application-name",
+			"neovim",
+			"--data-path",
+			joinpath(opts.data_dir, "sql-tools-data"),
 		},
 		filetypes = { "sql" },
 		handlers = {
@@ -359,6 +365,7 @@ local function new_default_query_async(opts)
 	else
 		utils.log_info("Connected")
 	end
+	query_manager.refresh_object_cache()
 end
 
 --- If the current buffer is empty, put the query into this buffer. Otherwise,
@@ -366,7 +373,7 @@ end
 local function insert_query_into_buffer(query)
 	if vim.trim(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false))) == "" then
 		vim.api.nvim_buf_set_lines(0, 0, 0, false, vim.split(query, "\n"))
-		return
+		return 0
 	end
 
 	local query_manager = vim.b.query_manager
@@ -376,8 +383,10 @@ local function insert_query_into_buffer(query)
 
 	local connect_params = query_manager.get_connect_params()
 	local buf = new_query_async()
+	query_manager = vim.b[buf].query_manager
 	query_manager.connect_async(connect_params)
 	vim.api.nvim_buf_set_lines(buf, 0, 0, false, vim.split(query, "\n"))
+	return buf
 end
 
 local function backup_database_async(query_manager)
@@ -556,6 +565,8 @@ local function save_query_results_async(result_info)
 	end
 end
 
+local show_caching_in_status_line = false
+
 local M = {
 	new_query = function()
 		utils.try_resume(coroutine.create(function()
@@ -573,9 +584,15 @@ local M = {
 
 	-- Prompts for a database to switch to that is on the currently
 	-- connected server
-	switch_database = function()
+	switch_database = function(callback)
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
+			return
+		end
 		utils.try_resume(coroutine.create(function()
 			switch_database_async()
+			query_manager.refresh_object_cache(callback)
 		end))
 	end,
 
@@ -588,6 +605,7 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			connect_async(plugin_opts, query_manager)
+			query_manager.refresh_object_cache()
 		end))
 	end,
 
@@ -595,16 +613,33 @@ local M = {
 		edit_connections(plugin_opts)
 	end,
 
-	-- Rebuilds the intellisense cache
-	refresh_intellisense_cache = function()
+	-- Rebuilds the sql object and intellisense cache
+	refresh_cache = function()
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
+			return
+		end
+		if query_manager.get_state() ~= query_manager_module.states.Connected then
+			utils.log_error("You are currently " .. query_manager.get_state())
+			return
+		end
+		-- refresh the object cache, fire and forget
+		show_caching_in_status_line = true
+		query_manager.refresh_object_cache(function()
+			show_caching_in_status_line = false
+			vim.cmd("redrawstatus")
+		end)
+
+		-- refresh the intellisense cache, fire and forget
 		local success, msg = pcall(function()
-			local client = utils.get_lsp_client()
+			local client = query_manager.get_lsp_client()
 			client:notify("textDocument/rebuildIntelliSense", { ownerUri = utils.lsp_file_uri() })
-			utils.log_info("Refreshing intellisense...")
 		end)
 		if not success then
 			utils.log_error(msg)
 		end
+		utils.log_info("Refreshing cache...")
 	end,
 
 	disconnect = function()
@@ -630,7 +665,20 @@ local M = {
 				connect_to_default(query_manager, plugin_opts)
 			end
 			local result = query_manager.execute_async(query)
-			display_query_results(plugin_opts, result)
+			if result then -- since cancelled query returns nil, have to check for nil before displaying
+				display_query_results(plugin_opts, result)
+			end
+		end))
+	end,
+
+	cancel_query = function()
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query or open an existing one.")
+			return
+		end
+		utils.try_resume(coroutine.create(function()
+			query_manager.cancel_async()
 		end))
 	end,
 
@@ -652,13 +700,18 @@ local M = {
 				if not (connect_params and connect_params.connection and connect_params.connection.options) then
 					return "Connected"
 				end
+
 				local db = connect_params.connection.options.database
 				local server = connect_params.connection.options.server
 				if not (db or server) then
 					return "Connected"
 				end
+				local caching = ""
+				if show_caching_in_status_line and qm.is_refreshing_object_cache() then
+					caching = " (Caching database objects...)"
+				end
 
-				return server .. " | " .. db
+				return server .. " | " .. db .. caching
 			end
 		end,
 		cond = function()
@@ -696,6 +749,64 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			save_query_results_async(result_info)
+		end))
+	end,
+
+	find_object = function(callback)
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
+			return
+		end
+		if query_manager.get_state() ~= query_manager_module.states.Connected then
+			utils.log_error("You are currently " .. query_manager.get_state())
+			return
+		end
+
+		if query_manager.is_refreshing_object_cache() then
+			show_caching_in_status_line = true
+			vim.cmd("redrawstatus")
+			utils.log_error("Still caching. Try again in a few seconds...")
+			return
+		end
+		show_caching_in_status_line = false
+		vim.cmd("redrawstatus")
+
+		local title = "Find"
+		local connect_params = query_manager.get_connect_params()
+		if
+			connect_params
+			and connect_params.connection
+			and connect_params.connection.options
+			and connect_params.connection.options.database
+			and connect_params.connection.options.server
+		then
+			title = connect_params.connection.options.server .. " | " .. connect_params.connection.options.database
+		end
+
+		local db = connect_params.connection.options.database
+		local server = connect_params.connection.options.server
+		if not (db or server) then
+			return "Connected"
+		end
+		utils.try_resume(coroutine.create(function()
+			local item = require("mssql.find_object").find_async(
+				query_manager.get_object_cache(),
+				title,
+				query_manager.get_lsp_client()
+			)
+			if not item then
+				return
+			end
+			local buf = insert_query_into_buffer(item.script)
+			query_manager = vim.b[buf].query_manager
+			if plugin_opts.execute_generated_select_statements and item.select then
+				local result = query_manager.execute_async(item.script)
+				display_query_results(plugin_opts, result)
+			end
+			if callback then
+				callback()
+			end
 		end))
 	end,
 }

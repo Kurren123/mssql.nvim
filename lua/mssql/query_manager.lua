@@ -1,7 +1,9 @@
 local utils = require("mssql.utils")
+local find_object = require("mssql.find_object")
 
 local states = {
 	Disconnected = "disconnected",
+	Cancelling = "cancelling a query",
 	Connecting = "connecting",
 	Connected = "connected",
 	Executing = "executing a query",
@@ -28,14 +30,44 @@ return {
 	create_query_manager = function(bufnr, client)
 		local state = new_state()
 		local last_connect_params = {}
+		local object_cache = {}
 		local owner_uri = utils.lsp_file_uri(bufnr)
+		local refreshing = false
+		local refresh_cancellation_token = { cancel = false }
 
-		local existing_handler = client.handlers["connection/connectionchanged"]
-		client.handlers["connection/connectionchanged"] = function(err, result, ctx)
-			if existing_handler then
-				existing_handler(err, result, ctx)
-			end
+		local refresh_object_cache = function(callback)
+			-- cancel the current token (so running refresh will have a reference
+			-- to it and periodically check it), and set the current token to a new one.
+			-- Any running refresh will still refer to the old one
+			refresh_cancellation_token.cancel = true
+			local this_cancellation_token = { cancel = false }
+			refresh_cancellation_token = this_cancellation_token
 
+			object_cache = {}
+			refreshing = true
+			vim.cmd("redrawstatus")
+			-- refresh the object cache, fire and forget
+			utils.try_resume(coroutine.create(function()
+				local new_cache = find_object.get_object_cache_async(
+					client,
+					last_connect_params.connection.options,
+					refresh_cancellation_token
+				)
+				if this_cancellation_token.cancel then
+					return
+				end
+
+				object_cache = new_cache
+				refreshing = false
+				vim.cmd("redrawstatus")
+				if callback then
+					callback()
+				end
+			end))
+		end
+
+		local connectionchanged_handler
+		connectionchanged_handler = function(_, result, _)
 			if not (result and result.ownerUri == owner_uri and result.connection) then
 				return
 			end
@@ -48,7 +80,9 @@ return {
 					},
 				},
 			})
+			refresh_object_cache()
 		end
+		utils.register_lsp_handler(client, "connection/connectionchanged", connectionchanged_handler)
 
 		return {
 			-- the owner uri gets added to the connect_params
@@ -111,12 +145,29 @@ return {
 				result, err = utils.wait_for_notification_async(bufnr, client, "query/complete", 360000)
 				state.set_state(states.Connected)
 
+				-- handle cancellations that may be requested while waiting
+				if state.get_state() == states.Cancelling then
+					utils.log_info("Query was cancelled.")
+					return
+				end
+
 				if err then
 					error("Could not execute query: " .. vim.inspect(err), 0)
 				elseif not (result or result.batchSummaries) then
 					error("Could not execute query: no results returned", 0)
 				end
+
 				return result
+			end,
+
+			cancel_async = function()
+				if state.get_state() ~= states.Executing then
+					error("There is no query being executed in the current buffer", 0)
+				end
+
+				state.set_state(states.Cancelling)
+				-- let the waiting `execute_async` coroutine handle the 'query/complete' notification
+				utils.lsp_request_async(client, "query/cancel", { ownerUri = owner_uri })
 			end,
 
 			get_state = function()
@@ -129,6 +180,16 @@ return {
 
 			get_lsp_client = function()
 				return client
+			end,
+
+			refresh_object_cache = refresh_object_cache,
+
+			get_object_cache = function()
+				return object_cache
+			end,
+
+			is_refreshing_object_cache = function()
+				return refreshing
 			end,
 		}
 	end,

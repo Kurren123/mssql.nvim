@@ -1,0 +1,103 @@
+[
+  {
+    "jsonrpc": "2.0",
+    "id": 32,
+    "method": "connection/connect",
+    "params": {
+      "ownerUri": "._ClockifyCRM_ClockifyCRM",
+      "connection": {
+        "options": {
+          "id": "6CB82B74-0D77-4BD9-B586-E335E3468FC3",
+          "server": ".",
+          "database": "ClockifyCRM",
+          "databaseDisplayName": "ClockifyCRM",
+          "password": "",
+          "authenticationType": "Integrated",
+          "encrypt": "Mandatory",
+          "trustServerCertificate": true
+        }
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 33,
+    "method": "scripting/script",
+    "params": {
+      "scriptDestination": "ToEditor",
+      "scriptingObjects": [
+        {
+          "type": "Table",
+          "schema": "dbo",
+          "name": "Cases",
+          "parentName": null,
+          "parentTypeName": null
+        }
+      ],
+      "scriptOptions": {
+        "scriptCreateDrop": "ScriptSelect",
+        "typeOfDataToScript": "SchemaOnly",
+        "scriptStatistics": "ScriptStatsNone",
+        "targetDatabaseEngineEdition": "SqlServerEnterpriseEdition",
+        "targetDatabaseEngineType": "SingleInstance",
+        "scriptCompatibilityOption": "Script160Compat"
+      },
+      "ownerURI": "._ClockifyCRM_ClockifyCRM",
+      "operation": 0
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 67,
+    "method": "scripting/script",
+    "params": {
+      "scriptDestination": "ToEditor",
+      "scriptingObjects": [
+        {
+          "type": "StoredProcedure",
+          "schema": "dbo",
+          "name": "CreateDefaultLayouts",
+          "parentName": null,
+          "parentTypeName": null
+        }
+      ],
+      "scriptOptions": {
+        "scriptCreateDrop": "ScriptCreate",
+        "typeOfDataToScript": "SchemaOnly",
+        "scriptStatistics": "ScriptStatsNone",
+        "targetDatabaseEngineEdition": "SqlServerEnterpriseEdition",
+        "targetDatabaseEngineType": "SingleInstance",
+        "scriptCompatibilityOption": "Script160Compat"
+      },
+      "ownerURI": "._master_master",
+      "operation": 6
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 31,
+    "method": "scripting/script",
+    "params": {
+      "scriptDestination": "ToEditor",
+      "scriptingObjects": [
+        {
+          "type": "UserDefinedFunction",
+          "schema": "dbo",
+          "name": "PDASplit",
+          "parentName": null,
+          "parentTypeName": null
+        }
+      ],
+      "scriptOptions": {
+        "scriptCreateDrop": "ScriptCreate",
+        "typeOfDataToScript": "SchemaOnly",
+        "scriptStatistics": "ScriptStatsNone",
+        "targetDatabaseEngineEdition": "SqlServerEnterpriseEdition",
+        "targetDatabaseEngineType": "SingleInstance",
+        "scriptCompatibilityOption": "Script160Compat"
+      },
+      "ownerURI": "._master_master",
+      "operation": 6
+    }
+  }
+]

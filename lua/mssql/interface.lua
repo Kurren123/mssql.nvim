@@ -12,6 +12,7 @@ return {
 			new_query = { "n", M.new_query, desc = "New Query", icon = { icon = "", color = "yellow" } },
 			connect = { "c", M.connect, desc = "Connect", icon = { icon = "󱘖", color = "green" } },
 			disconnect = { "q", M.disconnect, desc = "Disconnect", icon = { icon = "", color = "red" } },
+			cancel_query = { "l", M.cancel_query, desc = "Cancel Query", icon = { icon = "", color = "red" } },
 			execute_query = {
 				"x",
 				M.execute_query,
@@ -25,10 +26,10 @@ return {
 				desc = "Edit Connections",
 				icon = { icon = "󰅩", color = "grey" },
 			},
-			refresh_intellisense = {
+			refresh_cache = {
 				"r",
-				M.refresh_intellisense_cache,
-				desc = "Refresh Intellisense",
+				M.refresh_cache,
+				desc = "Refresh Cache",
 				icon = { icon = "", color = "grey" },
 			},
 			new_default_query = {
@@ -36,6 +37,12 @@ return {
 				M.new_default_query,
 				desc = "New Default Query",
 				icon = { icon = "", color = "yellow" },
+			},
+			find_object = {
+				"f",
+				M.find_object,
+				desc = "Find",
+				icon = { icon = "", color = "green" },
 			},
 		}
 
@@ -53,19 +60,25 @@ return {
 				if qm then
 					local state = qm.get_state()
 					local states = query_manager_module.states
-					if state == states.Connecting or state == states.Executing then
+					if state == states.Connecting then
 						return {
 							keymaps.new_query,
 							keymaps.new_default_query,
 							keymaps.edit_connections,
-							keymaps.refresh_intellisense,
+						}
+					elseif state == states.Executing then
+						return {
+							keymaps.new_query,
+							keymaps.new_default_query,
+							keymaps.edit_connections,
+							keymaps.cancel_query,
 						}
 					elseif state == states.Connected then
 						return {
 							keymaps.new_query,
 							keymaps.new_default_query,
 							keymaps.edit_connections,
-							keymaps.refresh_intellisense,
+							keymaps.refresh_cache,
 							keymaps.execute_query,
 							keymaps.disconnect,
 							{
@@ -74,13 +87,13 @@ return {
 								desc = "Switch Database",
 								icon = { icon = "", color = "yellow" },
 							},
+							keymaps.find_object,
 						}
 					elseif state == states.Disconnected then
 						return {
 							keymaps.new_query,
 							keymaps.new_default_query,
 							keymaps.edit_connections,
-							keymaps.refresh_intellisense,
 							keymaps.connect,
 							{
 								"x",
@@ -89,6 +102,12 @@ return {
 								mode = { "n", "v" },
 								icon = { icon = "", color = "green" },
 							},
+						}
+					elseif state == states.Cancelling then
+						return {
+							keymaps.new_query,
+							keymaps.new_default_query,
+							keymaps.edit_connections,
 						}
 					else
 						utils.log_error("Entered unrecognised query state: " .. state)
@@ -152,12 +171,14 @@ return {
 			BackupDatabase = M.backup_database,
 			RestoreDatabase = M.restore_database,
 			ExecuteQuery = M.execute_query,
-			RefreshIntellisense = M.refresh_intellisense_cache,
+			RefreshCache = M.refresh_cache,
 			EditConnections = M.edit_connections,
 			SwitchDatabase = M.switch_database,
 			NewQuery = M.new_query,
 			NewDefaultQuery = M.new_default_query,
 			SaveQueryResults = M.save_query_results,
+			Find = M.find_object,
+			CancelQuery = M.cancel_query,
 		}
 
 		local complete = function(_, _, _)
@@ -179,32 +200,44 @@ return {
 
 			local state = qm.get_state()
 			local states = query_manager_module.states
-			if state == states.Connecting or state == states.Executing then
+			if state == states.Connecting then
 				return {
 					"NewQuery",
 					"NewDefaultQuery",
 					"EditConnections",
-					"RefreshIntellisense",
+				}
+			elseif state == states.Executing then
+				return {
+					"NewQuery",
+					"NewDefaultQuery",
+					"EditConnections",
+					"CancelQuery",
 				}
 			elseif state == states.Connected then
 				return {
 					"NewQuery",
 					"NewDefaultQuery",
 					"EditConnections",
-					"RefreshIntellisense",
+					"RefreshCache",
 					"ExecuteQuery",
 					"Disconnect",
 					"SwitchDatabase",
 					"BackupDatabase",
 					"RestoreDatabase",
+					"Find",
 				}
 			elseif state == states.Disconnected then
 				return {
 					"NewQuery",
 					"NewDefaultQuery",
 					"EditConnections",
-					"RefreshIntellisense",
 					"Connect",
+				}
+			elseif state == states.Cancelling then
+				return {
+					"NewQuery",
+					"NewDefaultQuery",
+					"EditConnections",
 				}
 			else
 				utils.log_error("Entered unrecognised query state: " .. state)

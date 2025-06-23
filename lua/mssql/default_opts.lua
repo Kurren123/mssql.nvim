@@ -42,4 +42,7 @@ return {
 
 	-- The filetype (used in neovim to determine the language) of buffers that show query results. Set this to "" to disable markdown rendering.
 	results_buffer_filetype = "markdown",
+
+	-- When choosing a table/view in the finder, immediately execute the generated SELECT statement
+	execute_generated_select_statements = true,
 }

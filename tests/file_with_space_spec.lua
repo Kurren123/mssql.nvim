@@ -19,7 +19,7 @@ return {
 		end
 
 		utils.defer_async(2000)
-		mssql.refresh_intellisense_cache()
+		mssql.refresh_cache()
 
 		local result, err = utils.wait_for_notification_async(buf, client, "textDocument/intelliSenseReady", 10000)
 		if err then
