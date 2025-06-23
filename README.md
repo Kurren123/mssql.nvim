@@ -10,43 +10,15 @@
 An SQL Server plugin for neovim. Like it? Give a ⭐️!
 </p>
 
-## Demo
-### Commands
-   ![gif1](./docs/gifs/commands.gif)
-
-### Querries
-   ![gif2](./docs/gifs/querries.gif)
- 
-
 ## Features
 
-Completions, including TSQL keywords, stored procedures and cross database
-queries
+### Connecting to a Database and Creating Tables
+![gif1](./docs/gifs/commands.gif)
+### Executing a Query with Markdown-Formatted Results
+   ![gif2](./docs/gifs/querries.gif)
+### Finding and Generating Scripts for Database Objects
+   ![gif3](./docs/gifs/find_objects.gif)
 
-<img src="./docs/screenshots/Tsql_completion.png" alt="Tsql keywords screenshot" width="300"/>
-<img src="./docs/screenshots/Stored_procedure_completion.png" alt="stored procedures screenshot" width="300"/>
-<img src="./docs/screenshots/Cross_db_completion.png" alt="Cross db completion" width="300"/>
-
-Execute queries, with results in markdown tables for automatic colouring and
-rendering
-
-<img src="./docs/screenshots/Results.png" alt="results screenshot" width="400"/>
-
-Find and generate scripts for tables, views, stored procedures and functions
-
-<img src="./docs/screenshots/Find.png" alt="finder screenshot" width="400"/>
-
-User commands and optional which-key integration, showing only the key
-maps/commands which are possible (eg don't show `Connect` if we are already
-connected)
-
-<img src="./docs/screenshots/Which-key.png" alt="Which key screenshot" width="300"/>
-
-<img src="./docs/screenshots/UserCommands.png" alt="User commands screenshot" width="400"/>
-
-Lualine integration
-
-<img src="./docs/screenshots/Lualine.png" alt="Which key screenshot" width="600"/>
 
 🍒 Other cherries on top:
 
