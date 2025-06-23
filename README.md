@@ -10,6 +10,14 @@
 An SQL Server plugin for neovim. Like it? Give a ⭐️!
 </p>
 
+## Demo
+### Commands
+   ![gif1](./docs/gifs/commands.gif)
+
+### Querries
+   ![gif2](./docs/gifs/querries.gif)
+ 
+
 ## Features
 
 Completions, including TSQL keywords,
