@@ -3,9 +3,18 @@ local test_utils = require("tests.utils")
 
 local find_async = function()
 	local co = coroutine.running()
+	local success = false
 	mssql.find_object(function()
-		coroutine.resume(co)
+		success = true
+		if coroutine.status(co) == "suspended" then
+			coroutine.resume(co)
+		end
 	end)
+	vim.defer_fn(function()
+		if not success then
+			error("mssql.find_object did not resume the callback within 1 minute", 0)
+		end
+	end, 60000)
 	coroutine.yield()
 end
 
