@@ -59,9 +59,6 @@ local function enable_lsp(opts)
 		},
 		filetypes = { "sql" },
 		handlers = {
-			["textDocument/definition"] = function(err, result, ctx, config)
-				vim.notify("goto definition callback")
-			end,
 			["textDocument/intelliSenseReady"] = function(err, result)
 				if err then
 					utils.log_error("Could not start intellisense: " .. vim.inspect(err))
@@ -770,7 +767,6 @@ local M = {
 			title = connect_params.connection.options.server .. " | " .. connect_params.connection.options.database
 		end
 
-		vim.notify(title)
 		local db = connect_params.connection.options.database
 		local server = connect_params.connection.options.server
 		if not (db or server) then
@@ -791,7 +787,9 @@ local M = {
 				local result = query_manager.execute_async(item.script)
 				display_query_results(plugin_opts, result)
 			end
-			callback()
+			if callback then
+				callback()
+			end
 		end))
 	end,
 }

@@ -163,8 +163,8 @@ local get_object_cache_async = function(lsp_client, connection_options, cancella
 				node.text = node.picker_path .. node.label
 				table.insert(cache, node)
 			elseif not node.nodePath then
-				vim.notify("no node path")
-				vim.notify(vim.inspect(node))
+				utils.log_info("no node path")
+				utils.log_info(node)
 			elseif session.target_path and vim.startswith(session.target_path, node.nodePath) then
 				-- We are on our way to the target, expand
 				expand(node.nodePath)
