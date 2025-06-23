@@ -40,4 +40,23 @@ return {
 			end, 3000)
 		end
 	end,
+
+	-- Takes a list of functions that should be run inside a coroutine,
+	-- runs each one and waits for all of them to finish. Must be
+	-- run inside a coroutine
+	wait_for_all_async = function(async_functions)
+		local finished_count = 0
+		local co = coroutine.running()
+
+		for _, f in ipairs(async_functions) do
+			coroutine.resume(coroutine.create(function()
+				f()
+				finished_count = finished_count + 1
+				if finished_count == #async_functions then
+					coroutine.resume(co)
+				end
+			end))
+		end
+		coroutine.yield()
+	end,
 }

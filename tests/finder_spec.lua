@@ -11,11 +11,14 @@ local find_async = function()
 		end
 	end)
 	vim.defer_fn(function()
-		if not success then
-			error("mssql.find_object did not resume the callback within 1 minute", 0)
+		if coroutine.status(co) == "suspended" then
+			coroutine.resume(co)
 		end
 	end, 60000)
 	coroutine.yield()
+	if not success then
+		error("mssql.find_object did not resume the callback within 1 minute", 0)
+	end
 end
 
 return {

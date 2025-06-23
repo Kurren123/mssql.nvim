@@ -162,7 +162,7 @@ return {
 
 			cancel_async = function()
 				if state.get_state() ~= states.Executing then
-				  error("There is no query being executed in the current buffer", 0)
+					error("There is no query being executed in the current buffer", 0)
 				end
 
 				state.set_state(states.Cancelling)

@@ -584,7 +584,7 @@ local M = {
 
 	-- Prompts for a database to switch to that is on the currently
 	-- connected server
-	switch_database = function()
+	switch_database = function(callback)
 		local query_manager = vim.b.query_manager
 		if not query_manager then
 			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
@@ -592,7 +592,7 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			switch_database_async()
-			query_manager.refresh_object_cache()
+			query_manager.refresh_object_cache(callback)
 		end))
 	end,
 
