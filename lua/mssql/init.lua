@@ -179,10 +179,48 @@ end
 
 local plugin_opts
 
+local mssql_window
+local show_results_buffer_options = {
+	current_window = function(bufnr)
+		vim.api.nvim_set_option_value("buflisted", true, { buf = bufnr })
+		vim.api.nvim_set_current_buf(bufnr)
+	end,
+	split = function(bufnr)
+		local original_window = vim.api.nvim_get_current_win()
+
+		-- open a split if we haven't done already
+		if not (mssql_window and vim.api.nvim_win_is_valid(mssql_window)) then
+			vim.cmd("split")
+			mssql_window = vim.api.nvim_get_current_win()
+		end
+
+		vim.api.nvim_set_option_value("buflisted", true, { buf = bufnr })
+		vim.api.nvim_win_set_buf(mssql_window, bufnr)
+		vim.api.nvim_set_current_win(original_window)
+	end,
+}
+
+-- If the open_results_in is a string, sets it to the appropriate function
+local function set_show_results_option(opts)
+	if type(opts.open_results_in) == "string" and show_results_buffer_options[opts.open_results_in] then
+		opts.open_results_in = show_results_buffer_options[opts.open_results_in]
+	elseif type(opts.open_results_in) == "function" then
+		return
+	else
+		utils.log_error(
+			vim.inspect(opts.open_results_in)
+				.. " is not a valid option for open_results_in. Must be one of: "
+				.. table.concat(vim.tbl_keys(show_results_buffer_options), ", ")
+				.. ", or a function"
+		)
+	end
+end
+
 local function setup_async(opts)
 	opts = opts or {}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 	opts.connections_file = opts.connections_file or joinpath(opts.data_dir, "connections.json")
+	set_show_results_option(opts)
 	make_directory(opts.data_dir)
 
 	-- if the opts specify a tools file path, don't download.

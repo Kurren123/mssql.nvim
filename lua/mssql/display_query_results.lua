@@ -87,7 +87,7 @@ end
 local result_buffers = {}
 
 local function create_buffer(name, filetype)
-	local bufnr = vim.api.nvim_create_buf(true, false)
+	local bufnr = vim.api.nvim_create_buf(false, false)
 	table.insert(result_buffers, bufnr)
 	vim.api.nvim_buf_set_name(bufnr, name)
 	if filetype and filetype ~= "" then
@@ -103,7 +103,6 @@ local function display_markdown(lines, bufnr)
 	vim.api.nvim_set_option_value("swapfile", false, { buf = bufnr })
 	vim.api.nvim_set_option_value("readonly", true, { buf = bufnr })
 	vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
-	vim.api.nvim_set_current_buf(bufnr)
 end
 
 local function show_result_set_async(column_info, subset_params, opts)
@@ -127,6 +126,7 @@ local function show_result_set_async(column_info, subset_params, opts)
 	)
 	vim.b[buf].query_result_info = { subset_params = subset_params }
 	display_markdown(lines, buf)
+	opts.open_results_in(buf)
 end
 
 local function display_query_results(opts, result)

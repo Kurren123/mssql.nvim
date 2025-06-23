@@ -45,4 +45,14 @@ return {
 
 	-- When choosing a table/view in the finder, immediately execute the generated SELECT statement
 	execute_generated_select_statements = true,
+
+	--[[ How to open a buffer containing sql results.
+  Valid options are: 
+  "split"                   - Open results in a horizontal split
+  "current_window"          - Open results in the current window
+  function (bufnr) ... end  - Function which takes the buffer number of the results buffer to open 
+                              (called for each results buffer if there are multiple). Use this 
+                              to open the buffer in a custom way
+  --]]
+	open_results_in = "split",
 }

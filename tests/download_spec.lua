@@ -22,7 +22,9 @@ end
 
 local function setup_async()
 	local co = coroutine.running()
-	mssql.setup({}, function()
+	mssql.setup({
+		open_results_in = "current_window",
+	}, function()
 		vim.schedule(function()
 			coroutine.resume(co)
 		end)
