@@ -14,32 +14,18 @@ An SQL Server plugin for neovim. Like it? Give a ⭐️!
 ### 🔌 Connecting to a Database and Creating Tables
 ![gif1](./docs/gifs/commands.gif)
 
-This demo shows connecting to a SQL Server database and executing a script to create tables.  
-It reflects:
-- 🧩 Completion support (e.g., TSQL keywords and stored procedures)
-- 🧠 Smart command availability (e.g., only showing `Connect` when not connected)
-- ⚙️ User command integration
 
 ---
 
 ### 📊 Executing a Query with Markdown-Formatted Results
 ![gif2](./docs/gifs/querries.gif)
 
-This showcases running a query and viewing results rendered as a styled Markdown table.  
-It reflects:
-- ⚡ Execute queries with automatic result formatting
-- 🖌️ Syntax-aware coloring and rendering of result sets
-- 🎛️ Optional integration with statusline tools like Lualine
 
 ---
 
 ### 🔍 Finding and Generating Scripts for Database Objects
 ![gif3](./docs/gifs/find_objects.gif)
 
-This shows the use of the plugin’s object finder to locate tables and generate corresponding SQL scripts.  
-It reflects:
-- 🏗️ Find/generate scripts for tables, views, procedures, and functions
-- 🧠 Useful for exploring and reverse-engineering database structures
 
 🍒 Other cherries on top:
 
