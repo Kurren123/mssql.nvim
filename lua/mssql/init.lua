@@ -620,6 +620,10 @@ local M = {
 			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
 			return
 		end
+		if query_manager.get_state() ~= query_manager_module.states.Connected then
+			utils.log_error("You are currently " .. query_manager.get_state())
+			return
+		end
 		-- refresh the object cache, fire and forget
 		show_caching_in_status_line = true
 		query_manager.refresh_object_cache(function()
