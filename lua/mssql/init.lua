@@ -198,6 +198,19 @@ local show_results_buffer_options = {
 		vim.api.nvim_win_set_buf(mssql_window, bufnr)
 		vim.api.nvim_set_current_win(original_window)
 	end,
+	vsplit = function(bufnr)
+		local original_window = vim.api.nvim_get_current_win()
+
+		-- open a split if we haven't done already
+		if not (mssql_window and vim.api.nvim_win_is_valid(mssql_window)) then
+			vim.cmd("vsplit")
+			mssql_window = vim.api.nvim_get_current_win()
+		end
+
+		vim.api.nvim_set_option_value("buflisted", true, { buf = bufnr })
+		vim.api.nvim_win_set_buf(mssql_window, bufnr)
+		vim.api.nvim_set_current_win(original_window)
+	end,
 }
 
 -- If the open_results_in is a string, sets it to the appropriate function

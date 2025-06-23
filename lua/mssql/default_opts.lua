@@ -2,11 +2,16 @@ return {
 	-- Set up keymaps with this prefix. If which-key is found, this will be a which-key group.
 	keymap_prefix = nil,
 
-	-- Max rows to return for queries. Needed so that large results don't crash neovim.
-	max_rows = 100,
-
-	-- If a result row has a field text length larger than this it will be truncated when displayed
-	max_column_width = 100,
+	--[[ How to open a buffer containing sql results.
+  Valid options are: 
+  "split"                   - Open results in a horizontal split
+  "vsplit"                  - Open results in a vertical split
+  "current_window"          - Open results in the current window
+  function (bufnr) ... end  - Function which takes the buffer number of the results buffer to open 
+                              (called for each results buffer if there are multiple). Use this 
+                              to open the buffer in a custom way
+  --]]
+	open_results_in = "split",
 
 	-- Settings passed to the mssql language server. See https://github.com/Kurren123/mssql.nvim/blob/main/docs/Lsp-Settings.md
 	lsp_settings = {
@@ -18,16 +23,14 @@ return {
 		},
 	},
 
-	-- Directory to store download tools and internal config options
-	data_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", ""),
+	-- Max rows to return for queries. Needed so that large results don't crash neovim.
+	max_rows = 100,
 
-	-- Path to a json connections file (see https://github.com/Kurren123/mssql.nvim?tab=readme-ov-file#connections-json-file)
-	-- If nil, it's stored in the data_dir
-	connections_file = nil,
+	-- If a result row has a field text length larger than this it will be truncated when displayed
+	max_column_width = 100,
 
-	-- Path to an existing SQL tools service binary (see https://github.com/microsoft/sqltoolsservice/releases).
-	-- If nil, then the binary is auto downloaded to data_dir
-	tools_file = nil,
+	-- When choosing a table/view in the finder, immediately execute the generated SELECT statement
+	execute_generated_select_statements = true,
 
 	-- Options that will be set on buffers of sql file type (see https://neovim.io/doc/user/options.html)
 	sql_buffer_options = {
@@ -43,16 +46,14 @@ return {
 	-- The filetype (used in neovim to determine the language) of buffers that show query results. Set this to "" to disable markdown rendering.
 	results_buffer_filetype = "markdown",
 
-	-- When choosing a table/view in the finder, immediately execute the generated SELECT statement
-	execute_generated_select_statements = true,
+	-- Path to a json connections file (see https://github.com/Kurren123/mssql.nvim?tab=readme-ov-file#connections-json-file)
+	-- If nil, it's stored in the data_dir
+	connections_file = nil,
 
-	--[[ How to open a buffer containing sql results.
-  Valid options are: 
-  "split"                   - Open results in a horizontal split
-  "current_window"          - Open results in the current window
-  function (bufnr) ... end  - Function which takes the buffer number of the results buffer to open 
-                              (called for each results buffer if there are multiple). Use this 
-                              to open the buffer in a custom way
-  --]]
-	open_results_in = "split",
+	-- Path to an existing SQL tools service binary (see https://github.com/microsoft/sqltoolsservice/releases).
+	-- If nil, then the binary is auto downloaded to data_dir
+	tools_file = nil,
+
+	-- Directory to store download tools and internal config options
+	data_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", ""),
 }
