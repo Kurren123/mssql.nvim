@@ -105,7 +105,6 @@ return {
 							keymaps.new_default_query,
 							keymaps.edit_connections,
 							keymaps.refresh_intellisense,
-							keymaps.disconnect,
 						}
 					else
 						utils.log_error("Entered unrecognised query state: " .. state)
@@ -238,7 +237,6 @@ return {
 					"NewDefaultQuery",
 					"EditConnections",
 					"RefreshIntellisense",
-					"Disconnect",
 				}
 			else
 				utils.log_error("Entered unrecognised query state: " .. state)
