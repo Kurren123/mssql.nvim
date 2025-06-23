@@ -3,6 +3,7 @@ local find_object = require("mssql.find_object")
 
 local states = {
 	Disconnected = "disconnected",
+	Cancelling = "cancelling a query",
 	Connecting = "connecting",
 	Connected = "connected",
 	Executing = "executing a query",
@@ -144,6 +145,12 @@ return {
 				result, err = utils.wait_for_notification_async(bufnr, client, "query/complete", 360000)
 				state.set_state(states.Connected)
 
+				-- handle cancellations that may be requested while waiting
+				if state.get_state() == states.Cancelling then
+					utils.log_info("Query was cancelled.")
+					return
+				end
+
 				if err then
 					error("Could not execute query: " .. vim.inspect(err), 0)
 				elseif not (result or result.batchSummaries) then
@@ -151,6 +158,16 @@ return {
 				end
 
 				return result
+			end,
+
+			cancel_async = function()
+				if state.get_state() ~= states.Executing then
+				  error("There is no query being executed in the current buffer", 0)
+				end
+
+				state.set_state(states.Cancelling)
+				-- let the waiting `execute_async` coroutine handle the 'query/complete' notification
+				utils.lsp_request_async(client, "query/cancel", { ownerUri = owner_uri })
 			end,
 
 			get_state = function()

@@ -661,7 +661,20 @@ local M = {
 				connect_to_default(query_manager, plugin_opts)
 			end
 			local result = query_manager.execute_async(query)
-			display_query_results(plugin_opts, result)
+			if result then -- since cancelled query returns nil, have to check for nil before displaying
+				display_query_results(plugin_opts, result)
+			end
+		end))
+	end,
+
+	cancel_query = function()
+		local query_manager = vim.b.query_manager
+		if not query_manager then
+			utils.log_error("No mssql lsp is attached. Create a new query or open an existing one.")
+			return
+		end
+		utils.try_resume(coroutine.create(function()
+			query_manager.cancel_async()
 		end))
 	end,
 
