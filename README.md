@@ -18,7 +18,7 @@ An SQL Server plugin for neovim. Like it? Give a ⭐️!
 ---
 
 ### 📊 Executing a Query with Markdown-Formatted Results
-![gif2](./docs/gifs/querries.gif)
+![gif2](./docs/gifs/queries.gif)
 
 
 ---
