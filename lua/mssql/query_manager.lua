@@ -38,7 +38,6 @@ return {
 				return
 			end
 
-			finder.delete_cache(last_connect_params.connection.options)
 			last_connect_params = vim.tbl_deep_extend("force", last_connect_params, {
 				connection = {
 					options = {
@@ -48,7 +47,10 @@ return {
 					},
 				},
 			})
-			finder.initialise_cache_async(client, last_connect_params.connection.options)
+			finder.clean_cache()
+			coroutine.resume(coroutine.create(function()
+				finder.initialise_cache_async(client, last_connect_params.connection.options)
+			end))
 		end
 		utils.register_lsp_handler(client, "connection/connectionchanged", connectionchanged_handler)
 

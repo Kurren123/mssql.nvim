@@ -172,6 +172,21 @@ local function set_auto_commands(opts)
 			end,
 		})
 	end
+
+	-- clean the sql object cache on buffer close
+	-- use the BufWipeout auto command so that at that point the buffer is not loaded
+	vim.api.nvim_create_autocmd("BufDelete", {
+		callback = function(args)
+			local buf = args.buf
+			if vim.b[buf].query_manager then
+				vim.b[buf].query_manager = nil
+				vim.notify("calling clean up")
+				vim.schedule(function()
+					finder.clean_cache()
+				end)
+			end
+		end,
+	})
 end
 
 local plugin_opts
@@ -703,14 +718,13 @@ local M = {
 			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
 			return
 		end
-		local old_connect_options = query_manager.get_connect_params().connection.options
 		utils.try_resume(coroutine.create(function()
 			switch_database_async()
-			finder.delete_cache(old_connect_options)
 			finder.initialise_cache_async(
 				query_manager.get_lsp_client(),
 				query_manager.get_connect_params().connection.options
 			)
+			finder.clean_cache()
 			if callback then
 				callback()
 			end
@@ -775,8 +789,7 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			query_manager.disconnect_async()
-			local connect_options = query_manager.get_connect_params().connection.options
-			finder.delete_cache(connect_options)
+			finder.clean_cache()
 		end))
 	end,
 

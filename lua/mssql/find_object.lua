@@ -341,15 +341,31 @@ local find_async = function(connection_options, lsp_client)
 	return generate_script_async(item, lsp_client)
 end
 
+-- Checks for any cache entries not being used by any buffers and
+-- deletes them
+local function clean_cache()
+	local in_use = {}
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_is_loaded(buf) and vim.b[buf].query_manager then
+			local key = vim.json.encode(vim.b[buf].query_manager.get_connect_params().connection.options)
+			in_use[key] = true
+		end
+	end
+
+	vim.notify("in_use: " .. vim.inspect(in_use))
+	for cache_key, entry in pairs(global_cache) do
+		if not in_use[cache_key] then
+			vim.notify("deleting " .. cache_key)
+			if entry.cancellation_token then
+				entry.cancellation_token.cancel = true
+			end
+			global_cache[cache_key] = nil
+		end
+	end
+end
 return {
 	find_async = find_async,
 	initialise_cache_async = initialise_cache_async,
-	delete_cache = function(connection_options)
-		local key = vim.json.encode(connection_options)
-		if global_cache[key] and global_cache[key].cancellation_token then
-			global_cache[key].cancellation_token.cancel = true
-		end
-		global_cache[key] = nil
-	end,
+	clean_cache = clean_cache,
 	is_refreshing = is_refreshing,
 }
