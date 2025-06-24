@@ -11,21 +11,32 @@ An SQL Server plugin for neovim. Like it? Give a ⭐️!
 </p>
 
 ## Features
-### 🔌 Connecting to a Database and Creating Tables
-![gif1](./docs/gifs/commands.gif)
 
+Completions, including TSQL keywords, stored procedures and cross database
+queries
 
----
+<img src="./docs/screenshots/Tsql_completion.png" alt="Tsql keywords screenshot" width="300"/>
+<img src="./docs/screenshots/Stored_procedure_completion.png" alt="stored procedures screenshot" width="300"/>
+<img src="./docs/screenshots/Cross_db_completion.png" alt="Cross db completion" width="300"/>
 
-### 📊 Executing a Query with Markdown-Formatted Results
-![gif2](./docs/gifs/queries.gif)
+Execute queries, with results in markdown tables for automatic colouring and
+rendering
 
+![queries](./docs/gifs/queries.gif)
 
----
+Find and generate scripts for tables, views, stored procedures and functions
 
-### 🔍 Finding and Generating Scripts for Database Objects
-![gif3](./docs/gifs/find_objects.gif)
+![find objects](./docs/gifs/find_objects.gif)
 
+User commands and which-key integration
+
+![commands](./docs/gifs/commands.gif)
+
+<img src="./docs/screenshots/UserCommands.png" alt="User commands screenshot" width="400"/>
+
+Lualine/other status line integration
+
+<img src="./docs/screenshots/Lualine.png" alt="Which key screenshot" width="600"/>
 
 🍒 Other cherries on top:
 
