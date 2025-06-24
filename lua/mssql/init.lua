@@ -78,11 +78,7 @@ local function enable_lsp(opts)
 					return
 				end
 
-				if result.message.isError then
-					utils.log_error(result.message.message)
-				else
-					utils.log_info(result.message.message)
-				end
+				opts.view_messages_in(result.message.message, result.message.isError)
 			end,
 		},
 		on_attach = function(client, bufnr)
@@ -229,11 +225,76 @@ local function set_show_results_option(opts)
 	end
 end
 
+local message_buffer
+local message_buffer_error_ns = vim.api.nvim_create_namespace("mssql_error_highlight")
+local clear_message_buffer = function()
+	if message_buffer and vim.api.nvim_buf_is_valid(message_buffer) then
+		vim.api.nvim_set_option_value("modifiable", true, { buf = message_buffer })
+		vim.api.nvim_buf_set_lines(message_buffer, 0, -1, false, {})
+		vim.api.nvim_set_option_value("modifiable", false, { buf = message_buffer })
+	end
+end
+
+local view_message_options = {
+	notification = function(message, isError)
+		if isError then
+			utils.log_error(message)
+		else
+			utils.log_info(message)
+		end
+	end,
+	buffer = function(message, isError)
+		if not (message_buffer and vim.api.nvim_buf_is_valid(message_buffer)) then
+			message_buffer = vim.api.nvim_create_buf(false, false)
+			vim.api.nvim_buf_set_name(message_buffer, "sql messages")
+			vim.api.nvim_set_option_value("buftype", "nofile", { buf = message_buffer })
+			vim.api.nvim_set_option_value("bufhidden", "hide", { buf = message_buffer })
+			vim.api.nvim_set_option_value("swapfile", false, { buf = message_buffer })
+			vim.api.nvim_set_option_value("readonly", true, { buf = message_buffer })
+			vim.api.nvim_set_option_value("modifiable", false, { buf = message_buffer })
+			plugin_opts.open_results_in(message_buffer)
+		end
+		-- Append a line at the end
+		local lines = vim.api.nvim_buf_line_count(message_buffer)
+		vim.api.nvim_set_option_value("modifiable", true, { buf = message_buffer })
+		local message_lines = vim.split(message:gsub("\r", ""), "\n")
+		vim.api.nvim_buf_set_lines(message_buffer, lines, lines, false, message_lines)
+
+		-- Apply the 'Error' highlight group to the line
+		if isError then
+			vim.api.nvim_buf_set_extmark(message_buffer, message_buffer_error_ns, lines, 0, {
+				end_row = lines + #message_lines,
+				hl_group = "Error",
+			})
+		end
+
+		vim.api.nvim_set_option_value("modifiable", false, { buf = message_buffer })
+	end,
+}
+
+-- if the view_messages_in option is a string, sets it to the appropriate function
+local function set_view_message_option(opts)
+	if type(opts.view_messages_in) == "string" and view_message_options[opts.view_messages_in] then
+		opts.view_messages_in = view_message_options[opts.view_messages_in]
+	elseif type(opts.view_messages_in) == "function" then
+		return
+	else
+		utils.log_error(
+			vim.inspect(opts.view_messages_in)
+				.. " is not a valid option for view_messages_in. Must be one of: "
+				.. table.concat(vim.tbl_keys(view_message_options), ", ")
+				.. ", or a function"
+		)
+	end
+end
+
 local function setup_async(opts)
 	opts = opts or {}
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 	opts.connections_file = opts.connections_file or joinpath(opts.data_dir, "connections.json")
 	set_show_results_option(opts)
+	set_view_message_option(opts)
+
 	make_directory(opts.data_dir)
 
 	-- if the opts specify a tools file path, don't download.
@@ -715,6 +776,7 @@ local M = {
 			if query_manager.get_state() == query_manager_module.states.Disconnected then
 				connect_to_default(query_manager, plugin_opts)
 			end
+			clear_message_buffer()
 			local result = query_manager.execute_async(query)
 			if result then -- since cancelled query returns nil, have to check for nil before displaying
 				display_query_results(plugin_opts, result)
@@ -852,6 +914,7 @@ local M = {
 			local buf = insert_query_into_buffer(item.script)
 			query_manager = vim.b[buf].query_manager
 			if plugin_opts.execute_generated_select_statements and item.select then
+				clear_message_buffer()
 				local result = query_manager.execute_async(item.script)
 				display_query_results(plugin_opts, result)
 			end
