@@ -151,6 +151,16 @@ return {
 			get_lsp_client = function()
 				return client
 			end,
+
+			initialise_cache_async = function(force)
+				return finder.initialise_cache_async(client, last_connect_params.connection.options, force)
+			end,
+			find_async = function()
+				return finder.find_async(last_connect_params.connection.options, client)
+			end,
+			is_refreshing = function()
+				return finder.is_refreshing(last_connect_params.connection.options)
+			end,
 		}
 	end,
 }

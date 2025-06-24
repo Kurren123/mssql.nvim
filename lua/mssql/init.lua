@@ -493,7 +493,7 @@ local function new_default_query_async(opts)
 	else
 		utils.log_info("Connected")
 	end
-	finder.initialise_cache_async(query_manager.get_lsp_client(), connection)
+	query_manager.initialise_cache_async()
 end
 
 --- If the current buffer is empty, put the query into this buffer. Otherwise,
@@ -720,10 +720,7 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			switch_database_async()
-			finder.initialise_cache_async(
-				query_manager.get_lsp_client(),
-				query_manager.get_connect_params().connection.options
-			)
+			query_manager.initialise_cache_async()
 			finder.clean_cache()
 			if callback then
 				callback()
@@ -740,8 +737,7 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			connect_async(plugin_opts, query_manager)
-			local connect_options = query_manager.get_connect_params().connection.options
-			finder.initialise_cache_async(query_manager.get_lsp_client(), connect_options)
+			query_manager.initialise_cache_async()
 		end))
 	end,
 
@@ -762,10 +758,9 @@ local M = {
 		end
 		-- refresh the object cache, fire and forget
 		show_caching_in_status_line = true
-		local connect_options = query_manager.get_connect_params().connection.options
 
 		coroutine.resume(coroutine.create(function()
-			finder.initialise_cache_async(query_manager.get_lsp_client(), connect_options, true)
+			query_manager.initialise_cache_async(true)
 			show_caching_in_status_line = false
 			vim.cmd("redrawstatus")
 		end))
@@ -848,7 +843,7 @@ local M = {
 					return "Connected"
 				end
 				local caching = ""
-				if show_caching_in_status_line and finder.is_refreshing(connect_params.connection.options) then
+				if show_caching_in_status_line and qm.is_refreshing() then
 					caching = " (Caching database objects...)"
 				end
 
@@ -904,8 +899,7 @@ local M = {
 			return
 		end
 
-		local connect_options = query_manager.get_connect_params().connection.options
-		if finder.is_refreshing(connect_options) then
+		if query_manager.is_refreshing() then
 			show_caching_in_status_line = true
 			vim.cmd("redrawstatus")
 			utils.log_error("Still caching. Try again in a few seconds...")
@@ -916,7 +910,7 @@ local M = {
 		vim.cmd("redrawstatus")
 
 		utils.try_resume(coroutine.create(function()
-			local item = finder.find_async(connect_options, query_manager.get_lsp_client())
+			local item = query_manager.find_async()
 			if not item then
 				return
 			end
