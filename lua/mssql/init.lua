@@ -236,14 +236,14 @@ local clear_message_buffer = function()
 end
 
 local view_message_options = {
-	notification = function(message, isError)
-		if isError then
+	notification = function(message, is_error)
+		if is_error then
 			utils.log_error(message)
 		else
 			utils.log_info(message)
 		end
 	end,
-	buffer = function(message, isError)
+	buffer = function(message, is_error)
 		if not (message_buffer and vim.api.nvim_buf_is_valid(message_buffer)) then
 			message_buffer = vim.api.nvim_create_buf(false, false)
 			vim.api.nvim_buf_set_name(message_buffer, "sql messages")
@@ -261,7 +261,7 @@ local view_message_options = {
 		vim.api.nvim_buf_set_lines(message_buffer, lines, lines, false, message_lines)
 
 		-- Apply the 'Error' highlight group to the line
-		if isError then
+		if is_error then
 			vim.api.nvim_buf_set_extmark(message_buffer, message_buffer_error_ns, lines, 0, {
 				end_row = lines + #message_lines,
 				hl_group = "Error",
