@@ -180,7 +180,6 @@ local function set_auto_commands(opts)
 			local buf = args.buf
 			if vim.b[buf].query_manager then
 				vim.b[buf].query_manager = nil
-				vim.notify("calling clean up")
 				vim.schedule(function()
 					finder.clean_cache()
 				end)

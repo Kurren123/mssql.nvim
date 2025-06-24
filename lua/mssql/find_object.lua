@@ -352,10 +352,8 @@ local function clean_cache()
 		end
 	end
 
-	vim.notify("in_use: " .. vim.inspect(in_use))
 	for cache_key, entry in pairs(global_cache) do
 		if not in_use[cache_key] then
-			vim.notify("deleting " .. cache_key)
 			if entry.cancellation_token then
 				entry.cancellation_token.cancel = true
 			end
