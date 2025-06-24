@@ -1,5 +1,5 @@
 local utils = require("mssql.utils")
-local find_object = require("mssql.find_object")
+local finder = require("mssql.find_object")
 
 local states = {
 	Disconnected = "disconnected",
@@ -30,47 +30,15 @@ return {
 	create_query_manager = function(bufnr, client)
 		local state = new_state()
 		local last_connect_params = {}
-		local object_cache = {}
 		local owner_uri = utils.lsp_file_uri(bufnr)
-		local refreshing = false
-		local refresh_cancellation_token = { cancel = false }
-
-		local refresh_object_cache = function(callback)
-			-- cancel the current token (so running refresh will have a reference
-			-- to it and periodically check it), and set the current token to a new one.
-			-- Any running refresh will still refer to the old one
-			refresh_cancellation_token.cancel = true
-			local this_cancellation_token = { cancel = false }
-			refresh_cancellation_token = this_cancellation_token
-
-			object_cache = {}
-			refreshing = true
-			vim.cmd("redrawstatus")
-			-- refresh the object cache, fire and forget
-			utils.try_resume(coroutine.create(function()
-				local new_cache = find_object.get_object_cache_async(
-					client,
-					last_connect_params.connection.options,
-					refresh_cancellation_token
-				)
-				if this_cancellation_token.cancel then
-					return
-				end
-
-				object_cache = new_cache
-				refreshing = false
-				vim.cmd("redrawstatus")
-				if callback then
-					callback()
-				end
-			end))
-		end
 
 		local connectionchanged_handler
 		connectionchanged_handler = function(_, result, _)
 			if not (result and result.ownerUri == owner_uri and result.connection) then
 				return
 			end
+
+			finder.delete_cache(last_connect_params.connection.options)
 			last_connect_params = vim.tbl_deep_extend("force", last_connect_params, {
 				connection = {
 					options = {
@@ -80,7 +48,7 @@ return {
 					},
 				},
 			})
-			refresh_object_cache()
+			finder.initialise_cache_async(client, last_connect_params.connection.options)
 		end
 		utils.register_lsp_handler(client, "connection/connectionchanged", connectionchanged_handler)
 
@@ -180,16 +148,6 @@ return {
 
 			get_lsp_client = function()
 				return client
-			end,
-
-			refresh_object_cache = refresh_object_cache,
-
-			get_object_cache = function()
-				return object_cache
-			end,
-
-			is_refreshing_object_cache = function()
-				return refreshing
 			end,
 		}
 	end,

@@ -4,6 +4,7 @@ local display_query_results = require("mssql.display_query_results")
 local query_manager_module = require("mssql.query_manager")
 local interface = require("mssql.interface")
 local default_opts = require("mssql.default_opts")
+local finder = require("mssql.find_object")
 
 local joinpath = vim.fs.joinpath
 
@@ -477,7 +478,7 @@ local function new_default_query_async(opts)
 	else
 		utils.log_info("Connected")
 	end
-	query_manager.refresh_object_cache()
+	finder.initialise_cache_async(query_manager.get_lsp_client(), connection)
 end
 
 --- If the current buffer is empty, put the query into this buffer. Otherwise,
@@ -702,9 +703,17 @@ local M = {
 			utils.log_error("No mssql lsp is attached. Create a new query or open an exising one.")
 			return
 		end
+		local old_connect_options = query_manager.get_connect_params().connection.options
 		utils.try_resume(coroutine.create(function()
 			switch_database_async()
-			query_manager.refresh_object_cache(callback)
+			finder.delete_cache(old_connect_options)
+			finder.initialise_cache_async(
+				query_manager.get_lsp_client(),
+				query_manager.get_connect_params().connection.options
+			)
+			if callback then
+				callback()
+			end
 		end))
 	end,
 
@@ -717,7 +726,8 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			connect_async(plugin_opts, query_manager)
-			query_manager.refresh_object_cache()
+			local connect_options = query_manager.get_connect_params().connection.options
+			finder.initialise_cache_async(query_manager.get_lsp_client(), connect_options)
 		end))
 	end,
 
@@ -738,10 +748,13 @@ local M = {
 		end
 		-- refresh the object cache, fire and forget
 		show_caching_in_status_line = true
-		query_manager.refresh_object_cache(function()
+		local connect_options = query_manager.get_connect_params().connection.options
+
+		coroutine.resume(coroutine.create(function()
+			finder.initialise_cache_async(query_manager.get_lsp_client(), connect_options, true)
 			show_caching_in_status_line = false
 			vim.cmd("redrawstatus")
-		end)
+		end))
 
 		-- refresh the intellisense cache, fire and forget
 		local success, msg = pcall(function()
@@ -762,6 +775,8 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			query_manager.disconnect_async()
+			local connect_options = query_manager.get_connect_params().connection.options
+			finder.delete_cache(connect_options)
 		end))
 	end,
 
@@ -820,7 +835,7 @@ local M = {
 					return "Connected"
 				end
 				local caching = ""
-				if show_caching_in_status_line and qm.is_refreshing_object_cache() then
+				if show_caching_in_status_line and finder.is_refreshing(connect_params.connection.options) then
 					caching = " (Caching database objects...)"
 				end
 
@@ -876,38 +891,19 @@ local M = {
 			return
 		end
 
-		if query_manager.is_refreshing_object_cache() then
+		local connect_options = query_manager.get_connect_params().connection.options
+		if finder.is_refreshing(connect_options) then
 			show_caching_in_status_line = true
 			vim.cmd("redrawstatus")
 			utils.log_error("Still caching. Try again in a few seconds...")
 			return
 		end
+
 		show_caching_in_status_line = false
 		vim.cmd("redrawstatus")
 
-		local title = "Find"
-		local connect_params = query_manager.get_connect_params()
-		if
-			connect_params
-			and connect_params.connection
-			and connect_params.connection.options
-			and connect_params.connection.options.database
-			and connect_params.connection.options.server
-		then
-			title = connect_params.connection.options.server .. " | " .. connect_params.connection.options.database
-		end
-
-		local db = connect_params.connection.options.database
-		local server = connect_params.connection.options.server
-		if not (db or server) then
-			return "Connected"
-		end
 		utils.try_resume(coroutine.create(function()
-			local item = require("mssql.find_object").find_async(
-				query_manager.get_object_cache(),
-				title,
-				query_manager.get_lsp_client()
-			)
+			local item = finder.find_async(connect_options, query_manager.get_lsp_client())
 			if not item then
 				return
 			end
