@@ -263,7 +263,6 @@ local initialise_cache_async = function(lsp_client, connection_options, force)
 
 	global_cache[key].refresh_coroutine = coroutine.running()
 	vim.cmd("redrawstatus")
-	utils.defer_async(5000)
 	local new_cache = get_object_cache_async(lsp_client, connection_options, cancellation_token)
 	if not cancellation_token.cancel then
 		global_cache[key].cache = new_cache
