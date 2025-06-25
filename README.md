@@ -303,7 +303,7 @@ you've already given a ⭐ and want to support this project further, please
 consider donating to the
 [mssql.nvim fundraising page for Cancer Research UK](https://www.justgiving.com/page/mssqlnvim).
 
-![Cancer research uk logo](./docs/cancer-research-uk-logo.svg)
+![Cancer research uk logo](./docs/cancer-research-uk-logo.png)
 
 Cancer affects millions of lives every year. Any research we can do into beating
 it also has knock-on effects on enhancing our understanding of other diseases.
