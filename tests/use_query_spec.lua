@@ -17,7 +17,7 @@ return {
 		end
 
 		utils.defer_async(1000)
-		local db = vim[buf].query_manager.get_connect_params().connection.options.database
+		local db = vim.b[buf].query_manager.get_connect_params().connection.options.database
 		assert(db == "TestDbB", "Expected database to be TestDbB but instead it's " .. db)
 
 		vim.cmd("bdelete!")

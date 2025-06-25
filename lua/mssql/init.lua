@@ -93,8 +93,17 @@ local function enable_lsp(opts)
 				opts.view_messages_in(result.message.message, result.message.isError)
 			end,
 
-			["connection/connectionchanged"] = function(_, result, ctx)
-				local qm = vim.b[ctx.bufnr].query_manager
+			["connection/connectionchanged"] = function(_, result, _)
+				if not result.ownerUri then
+					return
+				end
+				local bufnr = vim.iter(vim.api.nvim_list_bufs()):find(function(buf)
+					return utils.lsp_file_uri(buf) == result.ownerUri
+				end)
+				if not bufnr then
+					return
+				end
+				local qm = vim.b[bufnr].query_manager
 				if not (result and result.connection and qm) then
 					return
 				end
