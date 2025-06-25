@@ -340,15 +340,15 @@ local find_async = function(connection_options, lsp_client)
 	return generate_script_async(item, lsp_client)
 end
 
--- Checks for any cache entries not being used by any buffers and
--- deletes them
-local function clean_cache()
+local function delete_unused_cache(in_use_connections)
+	-- convert to keys first
 	local in_use = {}
-	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_is_loaded(buf) and vim.b[buf].query_manager then
-			local key = vim.json.encode(vim.b[buf].query_manager.get_connect_params().connection.options)
-			in_use[key] = true
+	for _, in_use_connection in ipairs(in_use_connections) do
+		local key = in_use_connection
+		if type(key) == "table" then
+			key = vim.json.encode(key)
 		end
+		in_use[key] = true
 	end
 
 	for cache_key, entry in pairs(global_cache) do
@@ -360,9 +360,10 @@ local function clean_cache()
 		end
 	end
 end
+
 return {
-	find_async = find_async,
 	initialise_cache_async = initialise_cache_async,
-	clean_cache = clean_cache,
+	delete_unused_cache = delete_unused_cache,
 	is_refreshing = is_refreshing,
+	find_async = find_async,
 }

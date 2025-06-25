@@ -35,8 +35,8 @@ end
 return {
 	test_name = "Setup should download and extract the sql tools",
 	run_test_async = function()
-		vim.fn.delete(tools_folder, "rf")
-		vim.fn.delete(vim.fs.joinpath(vim.fn.stdpath("data"), "mssql.nvim/config.json"))
+		-- vim.fn.delete(tools_folder, "rf")
+		-- vim.fn.delete(vim.fs.joinpath(vim.fn.stdpath("data"), "mssql.nvim/config.json"))
 
 		local download_finished = false
 		vim.defer_fn(function()

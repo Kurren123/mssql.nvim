@@ -36,6 +36,17 @@ local function write_json_file(path, table)
 	end
 end
 
+local function clean_cache()
+	local in_use_connections = {}
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		local qm = vim.b[buf].query_manager
+		if vim.api.nvim_buf_is_loaded(buf) and qm and qm.get_state() ~= query_manager_module.states.Disconnected then
+			table.insert(in_use_connections, qm.get_connect_params().connection.options)
+		end
+	end
+	finder.delete_unused_cache(in_use_connections)
+end
+
 local lsp_name = "mssql_ls"
 local function enable_lsp(opts)
 	local default_path = joinpath(opts.data_dir, "sqltools/MicrosoftSqlToolsServiceLayer")
@@ -80,6 +91,19 @@ local function enable_lsp(opts)
 				end
 
 				opts.view_messages_in(result.message.message, result.message.isError)
+			end,
+
+			["connection/connectionchanged"] = function(_, result, ctx)
+				local qm = vim.b[ctx.bufnr].query_manager
+				if not (result and result.connection and qm) then
+					return
+				end
+
+				coroutine.resume(coroutine.create(function()
+					qm.connectionchanged_async(result)
+				end))
+
+				clean_cache()
 			end,
 		},
 		on_attach = function(client, bufnr)
@@ -181,7 +205,7 @@ local function set_auto_commands(opts)
 			if vim.b[buf].query_manager then
 				vim.b[buf].query_manager = nil
 				vim.schedule(function()
-					finder.clean_cache()
+					clean_cache()
 				end)
 			end
 		end,
@@ -720,7 +744,7 @@ local M = {
 		utils.try_resume(coroutine.create(function()
 			switch_database_async()
 			query_manager.initialise_cache_async()
-			finder.clean_cache()
+			clean_cache()
 			if callback then
 				callback()
 			end
@@ -783,7 +807,7 @@ local M = {
 		end
 		utils.try_resume(coroutine.create(function()
 			query_manager.disconnect_async()
-			finder.clean_cache()
+			clean_cache()
 		end))
 	end,
 

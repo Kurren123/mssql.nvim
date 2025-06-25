@@ -32,28 +32,6 @@ return {
 		local last_connect_params = {}
 		local owner_uri = utils.lsp_file_uri(bufnr)
 
-		local connectionchanged_handler
-		connectionchanged_handler = function(_, result, _)
-			if not (result and result.ownerUri == owner_uri and result.connection) then
-				return
-			end
-
-			last_connect_params = vim.tbl_deep_extend("force", last_connect_params, {
-				connection = {
-					options = {
-						user = result.connection.userName,
-						database = result.connection.databaseName,
-						server = result.connection.serverName,
-					},
-				},
-			})
-			finder.clean_cache()
-			coroutine.resume(coroutine.create(function()
-				finder.initialise_cache_async(client, last_connect_params.connection.options)
-			end))
-		end
-		utils.register_lsp_handler(client, "connection/connectionchanged", connectionchanged_handler)
-
 		return {
 			-- the owner uri gets added to the connect_params
 			connect_async = function(connect_params)
@@ -128,6 +106,23 @@ return {
 				end
 
 				return result
+			end,
+
+			connectionchanged_async = function(result)
+				if not (result and result.ownerUri == owner_uri and result.connection) then
+					return
+				end
+
+				last_connect_params = vim.tbl_deep_extend("force", last_connect_params, {
+					connection = {
+						options = {
+							user = result.connection.userName,
+							database = result.connection.databaseName,
+							server = result.connection.serverName,
+						},
+					},
+				})
+				finder.initialise_cache_async(client, last_connect_params.connection.options)
 			end,
 
 			cancel_async = function()
