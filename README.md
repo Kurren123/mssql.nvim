@@ -295,3 +295,13 @@ for all options and defaults
   extract the sql tools. Pass a callback as the second argument if you need to
   run code after initialization.
 - Formatting options are passed into the option's `lsp_settings`
+
+## Supporting this project
+
+I don't take personal donations as I feel like it ruins the fun. However, if
+you've already given a ⭐ and want to support this project further, please
+consider donating to the
+[mssql.nvim fundraising page for Cancer Research UK](https://www.justgiving.com/page/mssqlnvim).
+Cancer affects millions of lives every year. Any research we can do into beating
+it also has knock-on effects on enhancing our understanding of other diseases.
+Seeing anyone donate will make me feel like this project was worth it.
