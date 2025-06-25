@@ -307,4 +307,4 @@ consider donating to the
 
 Cancer affects millions of lives every year. Any research we can do into beating
 it also has knock-on effects on enhancing our understanding of other diseases.
-Seeing anyone donate will make me feel like this project was worth it.
+Seeing anyone donate will make this project worth it.
