@@ -68,6 +68,7 @@ local tests = {
 	require("tests.file_with_space_spec"),
 	require("tests.non_ascii_spec"),
 	require("tests.cancel_query_spec"),
+	require("tests.use_query_spec"),
 }
 
 coroutine.resume(coroutine.create(function()

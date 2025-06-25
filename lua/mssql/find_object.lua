@@ -108,6 +108,7 @@ local nodeTypes = {
 }
 
 local get_object_cache_async = function(lsp_client, connection_options, cancellation_token)
+	utils.wait_for_schedule_async()
 	local session = get_session_async(lsp_client, connection_options)
 	utils.safe_assert(session and session.sessionId)
 
