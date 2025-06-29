@@ -429,7 +429,22 @@ local function switch_database_async(buf)
 		error("Could not list databases", 0)
 	end
 
-	local db = utils.ui_select_async(result.databaseNames, { prompt = "Choose database" })
+    local excluded_databases = plugin_opts.excluded_databases or {}
+    local filteredDatabases = vim.tbl_filter(function(item)
+        for _, ex in ipairs(plugin_opts.excluded_databases) do
+            if vim.startswith(ex, "*") then
+                local suffix = ex:sub(2)
+                if item:find(suffix .. "$") then
+                    return false
+                end
+            elseif item == ex then
+                return false
+            end
+        end
+        return true
+    end, result.databaseNames)
+
+	local db = utils.ui_select_async(filteredDatabases, { prompt = "Choose database" })
 	utils.safe_assert(db, "No database chosen")
 
 	-- get the connect params first, because they get set

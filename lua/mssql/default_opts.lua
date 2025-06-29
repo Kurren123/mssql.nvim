@@ -65,4 +65,7 @@ return {
 
 	-- Directory to store download tools and internal config options
 	data_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", ""),
+
+    -- Databases to exclude when selectinga database to connect to.
+    excluded_databases = {},
 }
