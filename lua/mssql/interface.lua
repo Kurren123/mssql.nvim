@@ -121,7 +121,28 @@ return {
 						icon = { icon = "", color = "green" },
 					}
 
-					return { save_result, keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
+                    local bufnr = vim.b.query_result_info.buf
+                    local is_modifiable = vim.api.nvim_buf_get_option(bufnr, "modifiable")
+                    local is_readonly   = vim.api.nvim_buf_get_option(bufnr, "readonly")
+                    local commit = {}
+
+                    if is_modifiable or is_readonly then
+                        commit = {
+                            "w",
+                            M.make_buffer_writeable,
+                            desc = "Make Buffer Writeable",
+                            icon = { icon = "󱘫", color = "green" },
+                        }
+                    else
+                        commit = {
+                            "<CR>",
+                            M.commit_changes,
+                            desc = "Commit",
+                            icon = { icon = "󰋊", color = "green" },
+                        }
+                    end
+
+					return { save_result, commit, keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
 				else
 					return { keymaps.new_query, keymaps.new_default_query, keymaps.edit_connections }
 				end
@@ -254,3 +275,4 @@ return {
 		end, { nargs = 1, complete = complete })
 	end,
 }
+

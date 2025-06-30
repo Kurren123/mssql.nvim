@@ -429,7 +429,22 @@ local function switch_database_async(buf)
 		error("Could not list databases", 0)
 	end
 
-	local db = utils.ui_select_async(result.databaseNames, { prompt = "Choose database" })
+    local filteredDatabases = vim.tbl_filter(function(item)
+        for _, ex in ipairs(plugin_opts.excluded_databases) do
+            if vim.startswith(ex, "*") then
+                local suffix = ex:sub(2)
+                if item:find(suffix .. "$") then
+                    return false
+                end
+            elseif item == ex then
+                return false
+            end
+        end
+        return true
+    end, result.databaseNames)
+
+    local db = utils.ui_select_async(filteredDatabases, { prompt = "Choose database" })
+
 	utils.safe_assert(db, "No database chosen")
 
 	-- get the connect params first, because they get set
@@ -725,6 +740,162 @@ local function save_query_results_async(result_info)
 	end
 end
 
+local function parse_row_line(line)
+    local cells = {}
+    for cell in line:gmatch("[^|]+") do
+        local trimmed = vim.trim(cell)
+        table.insert(cells, trimmed == "NULL" and nil or trimmed)
+    end
+    return cells
+end
+
+local function sql_escape(value)
+  if value == nil or (type(value) == "string" and value:upper() == "NULL") then
+    return "NULL"
+  end
+  if type(value) == "number" then
+    return tostring(value)
+  end
+  return "'" .. tostring(value):gsub("'", "''") .. "'"
+end
+
+
+local function get_identity_column(column_info)
+  for _, col in ipairs(column_info) do
+    if col.isIdentity then return col.columnName end
+  end
+  for _, col in ipairs(column_info) do
+    if col.columnName == "Id" then return "Id" end
+  end
+  return nil
+end
+
+local function get_changed_rows(orig_lines, buf_lines)
+  local changes = {}
+  local last = math.max(#orig_lines, #buf_lines)
+  for i = 3, last do
+    local orig = orig_lines[i]
+    local curr = buf_lines[i]
+    if not curr then break end
+    if orig ~= curr then
+      table.insert(changes, {
+        line_number = i,
+        original    = orig,
+        edited      = curr,
+      })
+    end
+  end
+  return changes
+end
+
+local function build_dml_statements(table_name, column_info, column_names, id_col, changed_rows)
+  local queries = {}
+
+  for _, row in ipairs(changed_rows) do
+    local edit_cells = parse_row_line(row.edited)
+    local orig_cells = row.original and parse_row_line(row.original) or nil
+
+    local edited, original = {}, {}
+    for idx, name in ipairs(column_names) do
+      edited[name] = edit_cells[idx]
+      if orig_cells then original[name] = orig_cells[idx] end
+    end
+
+    local is_insert = (orig_cells == nil) or (edited[id_col] == nil or edited[id_col] == "")
+
+    if is_insert then
+      local cols, vals = {}, {}
+      for _, col in ipairs(column_info) do
+        local name = col.columnName
+        local val  = edited[name]
+        if not col.isIdentity and val ~= nil then
+          table.insert(cols, name)
+          table.insert(vals, sql_escape(val))
+        end
+      end
+      local stmt = string.format(
+        "INSERT INTO %s (%s) VALUES (%s);",
+        table_name,
+        table.concat(cols, ", "),
+        table.concat(vals, ", ")
+      )
+      table.insert(queries, stmt)
+    else
+      local sets = {}
+      for _, col in ipairs(column_info) do
+        local name = col.columnName
+        if name ~= id_col and edited[name] ~= original[name] then
+          table.insert(sets, string.format("%s = %s", name, sql_escape(edited[name])))
+        end
+      end
+      if #sets > 0 then
+        local stmt = string.format(
+          "UPDATE %s SET %s WHERE %s = %s;",
+          table_name,
+          table.concat(sets, ", "),
+          id_col,
+          edited[id_col]
+        )
+        table.insert(queries, stmt)
+      end
+    end
+  end
+
+  return queries
+end
+
+local function commit_query_result_changes_async(result_info)
+  utils.wait_for_schedule_async()
+
+  local bufnr = result_info.buf
+  local is_modifiable = vim.api.nvim_buf_get_option(bufnr, "modifiable")
+  local is_readonly   = vim.api.nvim_buf_get_option(bufnr, "readonly")
+
+  if not is_modifiable or is_readonly then
+    utils.log_error("The buffer with the SQL query results is not modifiable or is readonly. Use the shortcut <leader>mw to toggle modifiable state.")
+    return
+  end
+
+  local ok, _ = pcall(utils.get_lsp_client, result_info.subset_params.ownerUri)
+  if not ok then
+    utils.log_error("The buffer with the SQL query has been closed; can't commit changes")
+    return
+  end
+
+  local column_info = result_info.subset_params.columnInfo
+  local id_col = get_identity_column(column_info)
+  if not id_col then
+    utils.log_error("No identity column or [Id] found")
+    return
+  end
+
+  local originalLines = result_info.lines
+  local bufferLines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local changed_rows = get_changed_rows(originalLines, bufferLines)
+
+  if #changed_rows == 0 then
+    utils.log_info("No changes detected")
+    return
+  end
+
+  local column_names = parse_row_line(originalLines[1])
+
+  local table_name = vim.fn.input("Enter the table which you want to update: ")
+  if not table_name or table_name == "" then
+    utils.log_error("No table name provided")
+    return
+  end
+
+  local queries = build_dml_statements(table_name, column_info, column_names, id_col, changed_rows)
+
+  local current_query_manager = result_info.query_manager
+  local connect_params = current_query_manager.get_connect_params()
+  local new_buffer = new_query_async()
+  local new_query_manager = vim.b[new_buffer].query_manager
+  new_query_manager.connect_async(connect_params)
+  vim.api.nvim_buf_set_lines(new_buffer, 0, 0, false, queries)
+end
+
 local show_caching_in_status_line = false
 
 local M = {
@@ -919,6 +1090,30 @@ local M = {
 			save_query_results_async(result_info)
 		end))
 	end,
+
+	commit_changes = function()
+		local result_info = vim.b.query_result_info
+
+		if not result_info then
+			utils.log_error("Go to a query result buffer to save results")
+			return
+		end
+
+		utils.try_resume(coroutine.create(function()
+            local ok, err = pcall(commit_query_result_changes_async, result_info)
+            if not ok then
+                vim.notify("ERROR: " .. tostring(err), vim.log.levels.ERROR)
+            end
+		end))
+	end,
+
+    make_buffer_writeable = function()
+		local result_info = vim.b.query_result_info
+        local bufnr = result_info and result_info.buf
+
+	    vim.api.nvim_set_option_value("readonly", false, { buf = bufnr })
+	    vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
+    end,
 
 	find_object = function(callback)
 		local query_manager = vim.b.query_manager

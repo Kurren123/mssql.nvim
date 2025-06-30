@@ -124,7 +124,12 @@ local function show_result_set_async(column_info, subset_params, opts)
 		"results " .. subset_params.batchIndex + 1 .. "-" .. subset_params.resultSetIndex + 1 .. extension,
 		opts.results_buffer_filetype
 	)
-	vim.b[buf].query_result_info = { subset_params = subset_params }
+	vim.b[buf].query_result_info = { 
+        buf = buf,
+        query_manager = vim.b.query_manager,
+        lines = lines,
+        subset_params = subset_params 
+    }
 	display_markdown(lines, buf)
 	opts.open_results_in(buf)
 end
@@ -146,6 +151,7 @@ local function display_query_results(opts, result)
 					resultSetIndex = result_set_index - 1,
 					rowsStartIndex = 0,
 					rowsCount = math.min(result_set_summary.rowCount, opts.max_rows),
+                    columnInfo = result_set_summary.columnInfo,
 				}
 				-- fetch and show all results at once
 				vim.schedule(function()
