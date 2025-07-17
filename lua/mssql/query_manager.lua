@@ -58,6 +58,10 @@ return {
 					error("Error in connecting: " .. result.errorMessage, 0)
 				end
 
+                if result and result.connectionSummary then
+                    connect_params.connection.options.database = result.connectionSummary.databaseName
+                    connect_params.connection.options.DatabaseDisplayName = result.connectionSummary.databaseName
+                end
 				state.set_state(states.Connected)
 				last_connect_params = connect_params
 			end,
