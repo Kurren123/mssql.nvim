@@ -69,6 +69,7 @@ local tests = {
 	require("tests.non_ascii_spec"),
 	require("tests.cancel_query_spec"),
 	require("tests.use_query_spec"),
+	require("tests.lualine_component_spec"),
 }
 
 coroutine.resume(coroutine.create(function()

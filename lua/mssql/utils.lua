@@ -145,6 +145,33 @@ local function get_rows_async(subset_params)
 	end
 end
 
+--- Formats elapsed time to display string for lualine component.
+---@param raw_time number?
+---@param with_ms? boolean
+---@return string
+local function format_elapsed_time_to_string(raw_time, with_ms)
+	if raw_time == nil then
+		return ""
+	end
+	with_ms = with_ms == nil and true or with_ms
+	local hours = math.floor(raw_time / 3600)
+	local minutes = math.floor((raw_time % 3600) / 60)
+	local seconds = math.floor(raw_time % 60)
+	local time_str
+	if hours == 0 then
+		time_str = string.format("%02d:%02d", minutes, seconds)
+	else
+		time_str = string.format("%02d:%02d:%02d", hours, minutes, seconds)
+	end
+
+	if with_ms then
+		local ms = math.floor((raw_time % 1) * 1000)
+		return string.format("%s.%03d", time_str, ms)
+	else
+		return time_str
+	end
+end
+
 return {
 	contains = contains,
 	wait_for_schedule_async = wait_for_schedule_async,
@@ -217,6 +244,9 @@ return {
 		log(msg, vim.log.levels.ERROR)
 	end,
 	safe_assert = safe_assert,
+
+    -- formats elapsed time for statusline output
+    format_elapsed_time_to_string = format_elapsed_time_to_string,
 
 	get_selected_text = function()
 		local mode = vim.api.nvim_get_mode().mode

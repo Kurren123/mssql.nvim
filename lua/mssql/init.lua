@@ -85,14 +85,44 @@ local function enable_lsp(opts)
 				end
 				return result, err
 			end,
-			["query/message"] = function(_, result)
-				if not (result or result.message or result.message.message) then
+
+			["query/complete"] = function(_, result)
+				if not (result and result.params and result.params.ownerUri) then
 					return
+				end
+				local bufnr = vim.iter(vim.api.nvim_list_bufs()):find(function(buf)
+					return utils.lsp_file_uri(buf) == result.params.ownerUri
+				end)
+
+				if not (bufnr and vim.b[bufnr].query_manager) then
+					return
+				end
+
+				if bufnr and vim.b[bufnr].query_manager then
+					local qm = vim.b[bufnr].query_manager
+					if qm.handle_query_complete then
+						qm.handle_query_complete(result.params)
+					end
+				end
+			end,
+			["query/message"] = function(_, result)
+				if not (result and result.message and result.message.message) then
+					return
+				end
+
+				-- handles "rows affected" from UPDATE, INSERT, and DELETE statements
+				local bufnr = vim.iter(vim.api.nvim_list_bufs()):find(function(buf)
+					return utils.lsp_file_uri(buf) == result.ownerUri
+				end)
+				if bufnr and vim.b[bufnr].query_manager then
+					local qm = vim.b[bufnr].query_manager
+					if qm.handle_query_message then
+						qm.handle_query_message(result)
+					end
 				end
 
 				opts.view_messages_in(result.message.message, result.message.isError)
 			end,
-
 			["connection/connectionchanged"] = function(_, result, _)
 				if not result.ownerUri then
 					return
@@ -338,6 +368,15 @@ end
 
 local function setup_async(opts)
 	opts = opts or {}
+    -- ensure that we use user's custom icons if configured, but validate are only single character
+    if opts.icons then
+        opts.icons = vim.tbl_deep_extend("force", default_opts.icons, opts.icons)
+        for key, icon in pairs(opts.icons) do
+            if key ~= "enabled" and type(icon) == "string" and vim.fn.strchars(icon) > 1 then
+                utils.log_warn("Icon '" .. key .. "' should be a single character, got: " .. icon)
+            end
+        end
+    end
 	opts = vim.tbl_deep_extend("keep", opts or {}, default_opts)
 	opts.connections_file = opts.connections_file or joinpath(opts.data_dir, "connections.json")
 	set_show_results_option(opts)
@@ -857,30 +896,56 @@ local M = {
 				return
 			end
 			local state = qm.get_state()
+
 			if state == query_manager_module.states.Disconnected then
-				return "Disconnected"
+				local disconnected_icon = plugin_opts.icons.enabled and plugin_opts.icons.disconnected .. " " or ""
+				return disconnected_icon .. "Connect to MSSQL"
 			elseif state == query_manager_module.states.Connecting then
 				return "Connecting..."
-			elseif state == query_manager_module.states.Executing then
-				return "Executing..."
-			elseif state == query_manager_module.states.Connected then
-				local connect_params = qm.get_connect_params()
-				if not (connect_params and connect_params.connection and connect_params.connection.options) then
-					return "Connected"
-				end
-
-				local db = connect_params.connection.options.database
-				local server = connect_params.connection.options.server
-				if not (db or server) then
-					return "Connected"
-				end
-				local caching = ""
-				if show_caching_in_status_line and qm.is_refreshing() then
-					caching = " (Caching database objects...)"
-				end
-
-				return server .. " | " .. db .. caching
 			end
+
+			local status_parts = {}
+			local exec_info = qm.last_execution()
+			local connect_params = qm.get_connect_params()
+
+			local server_db_string = ""
+			if connect_params and connect_params.connection and connect_params.connection.options then
+				local server = connect_params.connection.options.server
+				local db = connect_params.connection.options.database
+				if db and server then
+					local db_icon, server_icon = "", ""
+					if plugin_opts.icons.enabled then
+						server_icon = plugin_opts.icons.server .. " "
+						db_icon = " " .. plugin_opts.icons.database .. " "
+						server_db_string = server_icon .. server .. db_icon .. db
+					else
+						server_db_string = server .. " | " .. db
+					end
+				end
+			end
+
+			if state == query_manager_module.states.Executing then
+				table.insert(status_parts, server_db_string)
+				table.insert(status_parts, "Executing...")
+				if exec_info.elapsed_time then
+					table.insert(status_parts, utils.format_elapsed_time_to_string(exec_info.elapsed_time, false))
+				end
+			else -- Connected state (after completion, cancellation, or idle)
+				if exec_info.rows_affected ~= nil then
+					local rows_text = exec_info.rows_affected == 1 and "row" or "rows"
+					table.insert(status_parts, string.format("%d %s affected", exec_info.rows_affected, rows_text))
+				end
+				if exec_info.elapsed_time and exec_info.elapsed_time > 0 then
+					table.insert(status_parts, utils.format_elapsed_time_to_string(exec_info.elapsed_time, true))
+				end
+				table.insert(status_parts, server_db_string)
+			end
+
+			if show_caching_in_status_line and qm.is_refreshing() then
+				table.insert(status_parts, "(Caching database objects...)")
+			end
+
+			return table.concat(status_parts, "  ")
 		end,
 		cond = function()
 			return vim.b.query_manager ~= nil
