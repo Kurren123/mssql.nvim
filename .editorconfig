@@ -1,0 +1,29 @@
+# EditorConfig helps maintain consistent coding styles across editors/IDEs
+# https://editorconfig.org
+
+# top-most EditorConfig file
+root = true
+
+# Apply these general rules to all files
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+# Lua files: Use tabs for indentation, display width 4
+[*.lua]
+indent_style = tab
+indent_size = 4
+
+# JSON files: Use 2 spaces for indentation
+# YAML files: Use 2 spaces for indentation (YAML requires spaces)
+# SQL files: Use 2 spaces for indentation (based on seed.sql)
+[*.{json,yml,sql}]
+indent_style = space
+indent_size = 2
+
+# Shell scripts / PowerShell: Use tabs, display width 4 (based on test.ps1)
+[*.{sh,ps1}]
+indent_style = tab
+indent_size = 4
