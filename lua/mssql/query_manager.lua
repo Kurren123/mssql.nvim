@@ -53,7 +53,7 @@ return {
 				if err then
 					state.set_state(states.Disconnected)
 					error("Error in connecting: " .. err.message, 0)
-				elseif result and result.errorMessage then
+				elseif result and result.errorMessage and result.errorMessage ~= vim.NIL then
 					state.set_state(states.Disconnected)
 					error("Error in connecting: " .. result.errorMessage, 0)
 				end
