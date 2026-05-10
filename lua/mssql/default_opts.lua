@@ -1,3 +1,9 @@
+---@class IconsOpts
+---@field enabled boolean
+---@field disconnected string?
+---@field server string?
+---@field database string?
+
 return {
 	-- Set up keymaps with this prefix. If which-key is found, this will be a which-key group.
 	keymap_prefix = nil,
@@ -65,4 +71,13 @@ return {
 
 	-- Directory to store download tools and internal config options
 	data_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", ""),
+
+	-- Configuration for icons in default lualine component
+	---@type IconsOpts
+	icons = {
+		enabled = false,
+		disconnected = "",
+		server = "",
+		database = "",
+	}
 }
