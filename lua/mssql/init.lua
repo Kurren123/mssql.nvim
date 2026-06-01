@@ -478,12 +478,17 @@ local connect_async = function(opts, query_manager)
 	end
 end
 
-local function new_query_async()
+local function new_query_async(opts)
 	-- The langauge server requires all files to have a file name.
 	-- Vscode names new files "untitled-1" etc so we'll do the same
 	vim.cmd("enew")
 	local buf = vim.api.nvim_get_current_buf()
-	vim.cmd("file untitled-" .. buf .. ".sql")
+	local filename = "untitled-" .. buf .. ".sql"
+	if opts and opts.new_query_dir then
+		make_directory(opts.new_query_dir)
+		filename = joinpath(opts.new_query_dir, filename)
+	end
+	vim.cmd("file " .. vim.fn.fnameescape(filename))
 	vim.cmd("setfiletype sql")
 	vim.b[buf].is_temp_name = true
 
@@ -502,7 +507,7 @@ local function new_default_query_async(opts)
 	end
 	local connection = connections.default
 
-	local buf = new_query_async()
+	local buf = new_query_async(opts)
 	local query_manager = vim.b[buf].query_manager
 	if not query_manager then
 		error("CRITICAL: Lsp attached without query manager")
@@ -542,7 +547,7 @@ local function insert_query_into_buffer(query)
 	end
 
 	local connect_params = query_manager.get_connect_params()
-	local buf = new_query_async()
+	local buf = new_query_async(plugin_opts)
 	query_manager = vim.b[buf].query_manager
 	query_manager.connect_async(connect_params)
 	vim.api.nvim_buf_set_lines(buf, 0, 0, false, vim.split(query, "\n"))
@@ -730,7 +735,7 @@ local show_caching_in_status_line = false
 local M = {
 	new_query = function()
 		utils.try_resume(coroutine.create(function()
-			new_query_async()
+			new_query_async(plugin_opts)
 		end))
 	end,
 
