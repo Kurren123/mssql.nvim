@@ -65,4 +65,8 @@ return {
 
 	-- Directory to store download tools and internal config options
 	data_dir = vim.fs.joinpath(vim.fn.stdpath("data"), "/mssql.nvim"):gsub("[/\\]+$", ""),
+
+	-- Directory where new untitled SQL query files are created.
+	-- If nil, files are created in the current working directory.
+	new_query_dir = nil,
 }
